@@ -5,15 +5,22 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 // Configure Prisma for Supabase connection pooling
+// For connection poolers, we need to ensure proper connection handling
+const prismaClientOptions: any = {
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+}
+
+// Add connection pool configuration for Supabase pooler
+if (process.env.DATABASE_URL?.includes('pooler')) {
+  prismaClientOptions.datasources = {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  }
+}
+
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL,
-      },
-    },
-  })
+  new PrismaClient(prismaClientOptions)
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

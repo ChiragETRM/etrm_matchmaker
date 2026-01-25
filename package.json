@@ -11,6 +11,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:migrate-prod": "tsx scripts/migrate-db.ts",
+    "db:setup": "tsx scripts/setup-database.ts",
     "db:studio": "prisma studio",
     "seed:jobs": "tsx scripts/seed-jobs.ts"
   },
