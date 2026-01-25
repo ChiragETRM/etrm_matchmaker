@@ -2,9 +2,9 @@
 
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 
-export default function PostJobSuccessPage() {
+function PostJobSuccessContent() {
   const searchParams = useSearchParams()
   const [jobUrl, setJobUrl] = useState('')
   const [expiryDate, setExpiryDate] = useState('N/A')
@@ -78,5 +78,19 @@ export default function PostJobSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PostJobSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+        <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <PostJobSuccessContent />
+    </Suspense>
   )
 }
