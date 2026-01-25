@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate-prod": "tsx scripts/migrate-db.ts",
     "db:setup": "tsx scripts/setup-database.ts",
+    "db:diagnose": "tsx scripts/fix-pooler-issue.ts",
     "db:studio": "prisma studio",
     "seed:jobs": "tsx scripts/seed-jobs.ts"
   },

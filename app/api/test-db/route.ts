@@ -11,6 +11,28 @@ export async function GET() {
     // Test a simple query
     const result = await prisma.$queryRaw`SELECT 1 as test`
     
+    // Check current database and schema
+    const dbInfo = await prisma.$queryRaw<Array<{ current_database: string, current_schema: string }>>`
+      SELECT current_database(), current_schema()
+    `
+    
+    // Check if jobs table exists
+    const tableCheck = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'jobs'
+      ) as exists
+    `
+    
+    // List all tables in public schema
+    const allTables = await prisma.$queryRaw<Array<{ tablename: string }>>`
+      SELECT tablename 
+      FROM pg_tables 
+      WHERE schemaname = 'public'
+      ORDER BY tablename
+    `
+    
     // Get connection info (without exposing sensitive data)
     const dbUrl = process.env.DATABASE_URL
     const hasDbUrl = !!dbUrl
@@ -31,6 +53,9 @@ export async function GET() {
         hasPgbouncerParam: hasPgbouncer,
         hasSslParam: hasSsl,
       },
+      databaseInfo: dbInfo[0],
+      jobsTableExists: tableCheck[0]?.exists || false,
+      allTables: allTables.map(t => t.tablename),
       testQuery: result,
     })
   } catch (error) {
