@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 
 interface Job {
@@ -37,11 +37,7 @@ export default function JobsPage() {
     commodity: '',
   })
 
-  useEffect(() => {
-    fetchJobs()
-  }, [filters])
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -57,7 +53,11 @@ export default function JobsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
+
+  useEffect(() => {
+    fetchJobs()
+  }, [fetchJobs])
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">

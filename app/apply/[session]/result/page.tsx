@@ -45,8 +45,8 @@ export default function ApplyResultPage() {
             Application Not Successful
           </h1>
           <p className="text-lg text-gray-600 mb-6">
-            Unfortunately, we can't recommend applying for this role right now
-            because you don't meet the minimum requirements.
+            Unfortunately, we can&apos;t recommend applying for this role right now
+            because you don&apos;t meet the minimum requirements.
           </p>
           <p className="text-gray-500 text-sm">
             Thank you for your interest. We encourage you to browse other

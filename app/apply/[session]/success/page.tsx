@@ -12,7 +12,7 @@ export default function ApplicationSuccessPage() {
           </p>
           <p className="text-gray-500 text-sm">
             The recruiter will review your application and contact you directly
-            if you're a good fit for the role.
+            if you&apos;re a good fit for the role.
           </p>
         </div>
         <a

@@ -13,7 +13,7 @@ export default function Home() {
             ETRM-focused job posting and application system
           </p>
           <p className="text-lg text-gray-700 font-medium max-w-2xl mx-auto italic">
-            We promise not to call you until you ask us! We won't even ask for your number!
+            We promise not to call you until you ask us! We won&apos;t even ask for your number!
           </p>
         </div>
 
