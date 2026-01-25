@@ -22,22 +22,10 @@ function getDirectUrl(poolerUrl: string): string | undefined {
 }
 
 // Configure Prisma for Supabase connection pooling
-const dbUrl = process.env.DATABASE_URL || ''
-const directUrl = process.env.DIRECT_URL || getDirectUrl(dbUrl)
-
+// Note: directUrl is configured in schema.prisma, not here
+// The PrismaClient constructor only accepts log options, not datasources
 const prismaClientOptions: any = {
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-}
-
-// If we have a direct URL and are using a pooler, configure Prisma to use directUrl for migrations
-if (directUrl && dbUrl.includes('pooler')) {
-  prismaClientOptions.datasources = {
-    db: {
-      url: dbUrl,
-      directUrl: directUrl,
-    },
-  }
-  console.log('Prisma configured with pooler + direct URL fallback')
 }
 
 export const prisma =
