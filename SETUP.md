@@ -38,6 +38,39 @@ docker run --name postgres-curated-jobs \
   -d postgres:15
 ```
 
+### 2a. Create tables in Supabase (if using Supabase)
+
+The `public.jobs` (and other) tables must exist before the app can create jobs. Two options:
+
+**Option 1 — Easiest: Supabase SQL Editor**
+
+1. Open your [Supabase Dashboard](https://supabase.com/dashboard) → your project.
+2. Go to **SQL Editor** → **New query**.
+3. Copy the contents of `prisma/supabase-init.sql` and paste into the editor.
+4. Click **Run**. All required tables will be created.
+
+   If you change the Prisma schema later, regenerate the SQL with `npm run db:sql-supabase`, then run the new script in the SQL Editor again (or use `npx prisma db push` with the direct URL).
+
+**Option 2 — Prisma from your machine**
+
+1. In Supabase: **Project Settings** → **Database** → copy the **Connection string** (URI).
+2. Use the **Direct** connection (port `5432`), not the pooler. Example:
+   ```bash
+   postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require
+   ```
+3. Add to `.env`:
+   ```env
+   DATABASE_URL="postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+   DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require"
+   ```
+4. From the project root, run:
+   ```bash
+   npx prisma db push
+   ```
+   Or use the setup script: `npm run db:setup`.
+
+For **Vercel**: Ensure `DATABASE_URL` and `DIRECT_URL` are set in your project’s environment variables. The build runs `prisma db push` before `next build`, Add `DIRECT_URL` (Supabase direct connection, port 5432) in Vercel → Settings → Environment Variables, then redeploy. Tables will be created on the next deploy—no manual SQL or local migration needed.
+
 ### 3. Configure Environment Variables
 
 Create a `.env` file in the root directory:
