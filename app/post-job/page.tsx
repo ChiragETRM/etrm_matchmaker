@@ -133,7 +133,7 @@ export default function PostJobPage() {
     remove: removeGateRule,
   } = useFieldArray({ control, name: 'gateRules' })
 
-  const roleCategory = watch('roleCategory')
+  const roleCategory = watch('roleCategory') as 'ETRM_BA' | 'ETRM_DEV' | 'ETRM_TESTER' | 'TRADING_INFRA' | 'DATA_INTEGRATION' | 'QUANT_ANALYST' | 'OTHER'
   const etrmPackages = watch('etrmPackages')
 
   const addGateRule = (type: GateRule['type']) => {
