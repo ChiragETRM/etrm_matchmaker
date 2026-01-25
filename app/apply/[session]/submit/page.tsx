@@ -66,7 +66,7 @@ export default function SubmitApplicationPage() {
       formData.append('candidatePhone', data.candidatePhone || '')
       formData.append('candidateLinkedin', data.candidateLinkedin || '')
       formData.append('consent', 'true')
-      formData.append('turnstileToken', turnstileToken)
+      formData.append('turnstileToken', turnstileToken || '')
 
       const response = await fetch(`/api/apply/${session}/submit`, {
         method: 'POST',
