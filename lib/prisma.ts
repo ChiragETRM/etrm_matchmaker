@@ -25,32 +25,28 @@ function getDirectUrl(poolerUrl: string): string | undefined {
 const dbUrl = process.env.DATABASE_URL || ''
 const directUrl = process.env.DIRECT_URL || getDirectUrl(dbUrl)
 
-// If using pooler and it's having issues, use direct connection as fallback
-// This is a workaround for Supabase pooler visibility issues
-const useDirectConnection = dbUrl.includes('pooler') && !directUrl
-  ? false // Can't use direct if we can't derive it
-  : dbUrl.includes('pooler') && process.env.USE_DIRECT_CONNECTION === 'true'
-  ? true // Explicitly use direct if env var is set
-  : !dbUrl.includes('pooler') // Use whatever is in DATABASE_URL if not pooler
+// For Supabase pooler visibility issues: if USE_DIRECT_CONNECTION is set to 'true',
+// use direct connection instead of pooler
+// This is a workaround for pooler not being able to see tables
+const shouldUseDirect = process.env.USE_DIRECT_CONNECTION === 'true' && directUrl
 
-const effectiveUrl = useDirectConnection && directUrl ? directUrl : dbUrl
-
-// Configure Prisma
-const prismaClientOptions: any = {
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+// If we should use direct connection, temporarily override DATABASE_URL
+// Note: This only works if DIRECT_URL is set in environment variables
+if (shouldUseDirect && directUrl) {
+  // Save original
+  const originalUrl = process.env.DATABASE_URL
+  // Override for Prisma
+  process.env.DATABASE_URL = directUrl
 }
 
-// Only override datasources if we're using a different URL than DATABASE_URL
-if (effectiveUrl !== dbUrl) {
-  prismaClientOptions.datasources = {
-    db: {
-      url: effectiveUrl,
-    },
-  }
+const prismaClientOptions: any = {
+  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 }
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient(prismaClientOptions)
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
