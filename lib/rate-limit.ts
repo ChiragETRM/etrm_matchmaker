@@ -42,10 +42,10 @@ export function checkRateLimit(identifier: string): {
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now()
-    for (const [key, entry] of rateLimitStore.entries()) {
+    rateLimitStore.forEach((entry, key) => {
       if (now > entry.resetAt) {
         rateLimitStore.delete(key)
       }
-    }
+    })
   }, WINDOW_MS)
 }
