@@ -139,20 +139,36 @@ export async function POST(request: NextRequest) {
     
     // Provide more detailed error messages
     let errorMessage = 'Failed to create job'
+    let errorDetails = null
+    
     if (error instanceof Error) {
       errorMessage = error.message
+      errorDetails = error.stack
+      
       // Check for database connection errors
-      if (error.message.includes('Authentication failed') || error.message.includes('credentials')) {
-        errorMessage = 'Database connection failed. Please check your database credentials.'
-      } else if (error.message.includes('Unique constraint')) {
+      if (error.message.includes('Authentication failed') || 
+          error.message.includes('credentials') ||
+          error.message.includes("Can't reach database server") ||
+          error.message.includes('P1001') ||
+          error.message.includes('connection')) {
+        errorMessage = 'Database connection failed. Please check your database credentials and connection string.'
+        // Include more details in development
+        if (process.env.NODE_ENV === 'development') {
+          errorDetails = error.message
+        }
+      } else if (error.message.includes('Unique constraint') || error.message.includes('P2002')) {
         errorMessage = 'A job with this title already exists. Please use a different title.'
-      } else if (error.message.includes('Foreign key constraint')) {
+      } else if (error.message.includes('Foreign key constraint') || error.message.includes('P2003')) {
         errorMessage = 'Invalid data reference. Please check your form inputs.'
       }
     }
     
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { 
+        success: false, 
+        error: errorMessage,
+        ...(process.env.NODE_ENV === 'development' && errorDetails && { details: errorDetails })
+      },
       { status: 500 }
     )
   }
