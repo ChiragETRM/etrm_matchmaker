@@ -129,7 +129,14 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
+    // Log full error details for debugging
     console.error('Error creating job:', error)
+    if (error instanceof Error) {
+      console.error('Error name:', error.name)
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation error', details: error.errors },
@@ -145,17 +152,19 @@ export async function POST(request: NextRequest) {
       errorMessage = error.message
       errorDetails = error.stack
       
-      // Check for database connection errors
+      // Check for database connection errors - include more Prisma error codes
       if (error.message.includes('Authentication failed') || 
           error.message.includes('credentials') ||
           error.message.includes("Can't reach database server") ||
           error.message.includes('P1001') ||
-          error.message.includes('connection')) {
+          error.message.includes('P1000') ||
+          error.message.includes('P1017') ||
+          error.message.includes('connection') ||
+          error.message.includes('ECONNREFUSED') ||
+          error.message.includes('timeout')) {
         errorMessage = 'Database connection failed. Please check your database credentials and connection string.'
-        // Include more details in development
-        if (process.env.NODE_ENV === 'development') {
-          errorDetails = error.message
-        }
+        // Always include details for connection errors to help debug
+        errorDetails = error.message
       } else if (error.message.includes('Unique constraint') || error.message.includes('P2002')) {
         errorMessage = 'A job with this title already exists. Please use a different title.'
       } else if (error.message.includes('Foreign key constraint') || error.message.includes('P2003')) {
@@ -167,7 +176,8 @@ export async function POST(request: NextRequest) {
       { 
         success: false, 
         error: errorMessage,
-        ...(process.env.NODE_ENV === 'development' && errorDetails && { details: errorDetails })
+        // Include error details to help debug connection issues
+        ...(errorDetails && { details: errorDetails })
       },
       { status: 500 }
     )
