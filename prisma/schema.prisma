@@ -1,0 +1,163 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Job {
+  id                    String    @id @default(cuid())
+  slug                  String    @unique
+  title                 String
+  companyName           String?   @map("company_name")
+  locationText          String    @map("location_text")
+  countryCode           String?   @map("country_code")
+  remotePolicy          String    @map("remote_policy") // ONSITE | HYBRID | REMOTE
+  contractType          String    @map("contract_type") // PERM | CONTRACT
+  seniority             String    // JUNIOR | MID | SENIOR
+  roleCategory          String    @map("role_category") // BA | DEV | OPS | RISK | TRADING | COMPLIANCE
+  etrmPackages          String[]  @map("etrm_packages") @default([])
+  commodityTags         String[]  @map("commodity_tags") @default([])
+  experienceYearsMin    Int?      @map("experience_years_min")
+  budgetMin             Float?    @map("budget_min")
+  budgetMax             Float?    @map("budget_max")
+  budgetCurrency        String?   @map("budget_currency")
+  budgetPeriod          String?   @map("budget_period") // ANNUAL | DAY_RATE
+  budgetIsEstimate      Boolean   @default(false) @map("budget_is_estimate")
+  jdText                String    @map("jd_text") @db.Text
+  recruiterEmailTo      String    @map("recruiter_email_to")
+  recruiterEmailCc      String[]  @map("recruiter_email_cc") @default([])
+  emailSubjectPrefix    String?   @map("email_subject_prefix")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  expiresAt             DateTime  @map("expires_at")
+  status                String    @default("ACTIVE") // ACTIVE | EXPIRED
+
+  questionnaire         Questionnaire?
+  applicationSessions   ApplicationSession[]
+  applications          Application[]
+
+  @@index([slug])
+  @@index([expiresAt])
+  @@index([status])
+  @@map("jobs")
+}
+
+model Questionnaire {
+  id          String   @id @default(cuid())
+  jobId       String   @unique @map("job_id")
+  version     Int      @default(1)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  gateRules   GateRule[]
+
+  @@map("questionnaires")
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  questionnaireId String @map("questionnaire_id")
+  key           String
+  label         String
+  type          String   // BOOLEAN | SINGLE_SELECT | MULTI_SELECT | NUMBER | COUNTRY
+  required      Boolean  @default(false)
+  optionsJson   String?  @map("options_json") @db.Text // JSON array for select types
+  orderIndex    Int      @map("order_index")
+
+  questionnaire Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  @@index([questionnaireId, orderIndex])
+  @@map("questions")
+}
+
+model GateRule {
+  id              String   @id @default(cuid())
+  questionnaireId String   @map("questionnaire_id")
+  questionKey     String   @map("question_key")
+  operator        String   // EQ | GTE | INCLUDES_ANY | INCLUDES_ALL | IN
+  valueJson       String   @map("value_json") @db.Text // JSON value
+  orderIndex      Int      @map("order_index")
+
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+
+  @@index([questionnaireId, orderIndex])
+  @@map("gate_rules")
+}
+
+model ApplicationSession {
+  id                  String   @id @default(cuid())
+  jobId               String   @map("job_id")
+  questionnaireVersion Int     @map("questionnaire_version")
+  sessionToken        String   @unique @map("session_token")
+  answersJson         String?  @map("answers_json") @db.Text
+  status              String   @default("IN_PROGRESS") // IN_PROGRESS | PASSED | FAILED | ABANDONED
+  createdAt           DateTime @default(now()) @map("created_at")
+  completedAt         DateTime? @map("completed_at")
+  applicationId       String?  @unique @map("application_id")
+
+  job                 Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  application         Application? @relation(fields: [applicationId], references: [id])
+
+  @@index([sessionToken])
+  @@index([jobId])
+  @@map("application_sessions")
+}
+
+model Application {
+  id                String   @id @default(cuid())
+  jobId             String   @map("job_id")
+  candidateName     String   @map("candidate_name")
+  candidateEmail    String   @map("candidate_email")
+  candidatePhone    String?  @map("candidate_phone")
+  candidateLinkedin String?  @map("candidate_linkedin")
+  resumeFileId      String?  @map("resume_file_id")
+  answersJson       String   @map("answers_json") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  job               Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resumeFile        FileObject? @relation(fields: [resumeFileId], references: [id])
+  mailLogs          MailLog[]
+  session           ApplicationSession?
+
+  @@index([jobId])
+  @@map("applications")
+}
+
+model FileObject {
+  id          String   @id @default(cuid())
+  provider    String   // S3 | R2 | SUPABASE
+  path        String
+  mimeType    String   @map("mime_type")
+  sizeBytes   Int      @map("size_bytes")
+  checksum    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  applications Application[]
+
+  @@index([provider, path])
+  @@map("file_objects")
+}
+
+model MailLog {
+  id                String   @id @default(cuid())
+  jobId             String   @map("job_id")
+  applicationId     String?  @map("application_id")
+  toEmail           String   @map("to_email")
+  ccEmails          String[] @map("cc_emails") @default([])
+  status            String   // SENT | FAILED
+  providerMessageId String?  @map("provider_message_id")
+  errorText         String?  @map("error_text") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  application       Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([applicationId])
+  @@map("mail_logs")
+}
