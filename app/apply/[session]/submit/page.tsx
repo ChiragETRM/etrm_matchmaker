@@ -254,6 +254,5 @@ export default function SubmitApplicationPage() {
           </div>
         </div>
       </div>
-    </div>
   )
 }
