@@ -14,9 +14,12 @@ function SignInContent() {
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
-      router.replace(callbackUrl)
+      // Decode the callbackUrl in case it's URL-encoded
+      const decodedUrl = decodeURIComponent(callbackUrl)
+      // Use window.location for a more reliable redirect
+      window.location.href = decodedUrl
     }
-  }, [status, session, callbackUrl, router])
+  }, [status, session, callbackUrl])
 
   if (status === 'loading') {
     return (

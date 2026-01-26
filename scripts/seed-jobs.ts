@@ -377,6 +377,427 @@ Join our team as an ETRM Business Analyst specializing in **RightAngle**. You'll
       },
     ],
   },
+  {
+    title: 'Senior ETRM Developer - Trayport',
+    companyName: 'European Energy Trading',
+    locationText: 'Frankfurt, Germany',
+    remotePolicy: 'HYBRID' as const,
+    contractType: 'PERM' as const,
+    seniority: 'SENIOR' as const,
+    roleCategory: 'ETRM_DEV' as const,
+    etrmPackages: ['Trayport'],
+    commodityTags: ['Power', 'Gas', 'Emissions'],
+    budgetMin: 100000,
+    budgetMax: 130000,
+    budgetCurrency: 'EUR',
+    budgetPeriod: 'ANNUAL' as const,
+    budgetIsEstimate: false,
+    jdText: `Senior ETRM Developer - **Trayport**
+
+**Role Summary**
+We're seeking an experienced **Trayport** developer to enhance our European power and gas trading platform. You'll work on critical trading infrastructure and integrations.
+
+**Key Responsibilities**
+• Develop and maintain **Trayport** customizations and workflows.
+• Build interfaces to European exchanges (EEX, ICE Endex, Nord Pool).
+• Develop real-time trading and position management solutions.
+• Optimize system performance for high-frequency trading.
+• Support production trading operations and resolve issues.
+• Collaborate with traders and operations teams.
+
+**Required Skills**
+• Strong **Trayport** development experience (4+ years).
+• Experience with European power and gas markets.
+• Proficiency in **SQL** and database optimization.
+• Understanding of exchange connectivity and market data.
+• Strong problem-solving under pressure.
+
+**Nice to Have**
+• Experience with **Trayport** Voltaire or Gravity.
+• Knowledge of **Python** or **C#**.
+• Exposure to emissions trading (EU ETS).`,
+    recruiterEmailTo: 'recruiter@example.com',
+    questions: [
+      {
+        key: 'years_trayport',
+        label: 'How many years of hands-on Trayport experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 0,
+      },
+      {
+        key: 'languages',
+        label: 'Which languages do you speak? (Select all that apply)',
+        type: 'MULTI_SELECT' as const,
+        required: true,
+        options: ['English', 'German', 'French', 'Spanish', 'Korean', 'Italian', 'Chinese'],
+        orderIndex: 1,
+      },
+      {
+        key: 'commodities',
+        label: 'Which commodity markets do you have strong domain knowledge in?',
+        type: 'MULTI_SELECT' as const,
+        required: true,
+        options: ['Power', 'Gas', 'LNG', 'Oil', 'Refined Products', 'Emissions', 'Coal', 'Freight'],
+        orderIndex: 2,
+      },
+    ],
+    gateRules: [
+      {
+        questionKey: 'years_trayport',
+        operator: 'GTE' as const,
+        value: 4,
+        orderIndex: 0,
+      },
+      {
+        questionKey: 'languages',
+        operator: 'INCLUDES_ANY' as const,
+        value: ['German'],
+        orderIndex: 1,
+      },
+      {
+        questionKey: 'commodities',
+        operator: 'INCLUDES_ANY' as const,
+        value: ['Power', 'Gas'],
+        orderIndex: 2,
+      },
+    ],
+  },
+  {
+    title: 'ETRM Business Analyst - Endur & Allegro',
+    companyName: 'Global Commodity Trading',
+    locationText: 'London, UK',
+    remotePolicy: 'REMOTE' as const,
+    contractType: 'CONTRACT' as const,
+    seniority: 'MID' as const,
+    roleCategory: 'ETRM_BA' as const,
+    etrmPackages: ['Endur', 'Allegro'],
+    commodityTags: ['Oil', 'Gas', 'LNG', 'Refined Products'],
+    budgetMin: 600,
+    budgetMax: 800,
+    budgetCurrency: 'GBP',
+    budgetPeriod: 'DAY_RATE' as const,
+    budgetIsEstimate: false,
+    jdText: `ETRM Business Analyst - **Endur** & **Allegro**
+
+**Role Summary**
+We need a versatile ETRM Business Analyst with experience in both **Endur** and **Allegro** to support our multi-system trading environment.
+
+**Key Responsibilities**
+• Gather requirements for both **Endur** and **Allegro** systems.
+• Document cross-system workflows and integrations.
+• Configure trading workflows in both platforms.
+• Support UAT and production issue resolution.
+• Work with developers on integration projects.
+• Train users on both systems.
+
+**Required Skills**
+• Hands-on experience with both **Endur** and **Allegro** (2+ years each).
+• Strong understanding of commodity trading workflows.
+• Experience with oil, gas, and refined products markets.
+• Excellent documentation and communication skills.
+• Ability to work with multiple stakeholders.
+
+**Nice to Have**
+• Experience with system integration projects.
+• SQL knowledge for data validation.
+• Exposure to risk management modules.`,
+    recruiterEmailTo: 'recruiter@example.com',
+    questions: [
+      {
+        key: 'years_endur',
+        label: 'How many years of hands-on Endur experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 0,
+      },
+      {
+        key: 'years_allegro',
+        label: 'How many years of hands-on Allegro experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 1,
+      },
+    ],
+    gateRules: [
+      {
+        questionKey: 'years_endur',
+        operator: 'GTE' as const,
+        value: 2,
+        orderIndex: 0,
+      },
+      {
+        questionKey: 'years_allegro',
+        operator: 'GTE' as const,
+        value: 2,
+        orderIndex: 1,
+      },
+    ],
+  },
+  {
+    title: 'ETRM Tester - RightAngle',
+    companyName: 'Commodity Systems Testing',
+    locationText: 'Chicago, USA',
+    remotePolicy: 'HYBRID' as const,
+    contractType: 'PERM' as const,
+    seniority: 'MID' as const,
+    roleCategory: 'ETRM_TESTER' as const,
+    etrmPackages: ['RightAngle'],
+    commodityTags: ['Oil', 'Refined Products', 'Coal'],
+    budgetMin: 95000,
+    budgetMax: 115000,
+    budgetCurrency: 'USD',
+    budgetPeriod: 'ANNUAL' as const,
+    budgetIsEstimate: false,
+    jdText: `ETRM Tester / QA Analyst - **RightAngle**
+
+**Role Summary**
+Join our QA team as an ETRM Tester specializing in **RightAngle**. You'll ensure our trading system works flawlessly before it reaches traders.
+
+**Key Responsibilities**
+• Design and execute test cases for **RightAngle** configurations.
+• Perform system, integration, and UAT testing.
+• Validate trade lifecycle, risk, and PnL calculations.
+• Reconcile system outputs with expected business results.
+• Log, track, and retest defects.
+• Support regression testing for upgrades.
+
+**Required Skills**
+• Hands-on **RightAngle** testing experience (2+ years).
+• Strong understanding of commodity trading workflows.
+• Experience with oil, refined products, or coal markets.
+• Attention to detail and structured testing approach.
+• Ability to work with BAs and developers.
+
+**Nice to Have**
+• Automation testing exposure.
+• SQL for data validation.
+• Prior operations or risk management exposure.`,
+    recruiterEmailTo: 'recruiter@example.com',
+    questions: [
+      {
+        key: 'years_rightangle',
+        label: 'How many years of hands-on RightAngle experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 0,
+      },
+      {
+        key: 'work_permit_country',
+        label: 'Do you have a legal work permit for United States?',
+        type: 'BOOLEAN' as const,
+        required: true,
+        options: null,
+        orderIndex: 1,
+      },
+      {
+        key: 'commodities',
+        label: 'Which commodity markets do you have strong domain knowledge in?',
+        type: 'MULTI_SELECT' as const,
+        required: true,
+        options: ['Power', 'Gas', 'LNG', 'Oil', 'Refined Products', 'Emissions', 'Coal', 'Freight'],
+        orderIndex: 2,
+      },
+    ],
+    gateRules: [
+      {
+        questionKey: 'years_rightangle',
+        operator: 'GTE' as const,
+        value: 2,
+        orderIndex: 0,
+      },
+      {
+        questionKey: 'work_permit_country',
+        operator: 'EQ' as const,
+        value: true,
+        orderIndex: 1,
+      },
+      {
+        questionKey: 'commodities',
+        operator: 'INCLUDES_ANY' as const,
+        value: ['Oil', 'Refined Products'],
+        orderIndex: 2,
+      },
+    ],
+  },
+  {
+    title: 'Senior ETRM Developer - Endur (OpenJVS)',
+    companyName: 'Energy Trading Innovations',
+    locationText: 'Zurich, Switzerland',
+    remotePolicy: 'REMOTE' as const,
+    contractType: 'PERM' as const,
+    seniority: 'SENIOR' as const,
+    roleCategory: 'ETRM_DEV' as const,
+    etrmPackages: ['Endur'],
+    commodityTags: ['Power', 'Gas', 'LNG', 'Emissions'],
+    budgetMin: 130000,
+    budgetMax: 160000,
+    budgetCurrency: 'CHF',
+    budgetPeriod: 'ANNUAL' as const,
+    budgetIsEstimate: false,
+    jdText: `Senior ETRM Developer - **Endur** (OpenJVS)
+
+**Role Summary**
+We're looking for a senior **Endur** developer with strong **OpenJVS** skills to lead our development initiatives. You'll architect solutions and mentor junior developers.
+
+**Key Responsibilities**
+• Lead **Endur** development projects and architecture decisions.
+• Develop complex customizations using **OpenJVS** and **JVS**.
+• Build high-performance interfaces to exchanges and market data providers.
+• Optimize system performance and resolve critical production issues.
+• Mentor junior developers and establish best practices.
+• Support **Endur** upgrades and migration projects.
+
+**Required Skills**
+• Strong **Endur** development experience (5+ years).
+• Expert-level proficiency in **OpenJVS** / **JVS**.
+• Deep **SQL** and **Oracle** database knowledge.
+• Strong understanding of **Endur** data model and architecture.
+• Experience leading development projects.
+
+**Nice to Have**
+• Experience with **Endur** cloud deployments.
+• Knowledge of **Java** or **Python**.
+• Exposure to European power and gas markets.`,
+    recruiterEmailTo: 'recruiter@example.com',
+    questions: [
+      {
+        key: 'years_endur',
+        label: 'How many years of hands-on Endur experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 0,
+      },
+      {
+        key: 'languages',
+        label: 'Which languages do you speak? (Select all that apply)',
+        type: 'MULTI_SELECT' as const,
+        required: true,
+        options: ['English', 'German', 'French', 'Spanish', 'Korean', 'Italian', 'Chinese'],
+        orderIndex: 1,
+      },
+      {
+        key: 'work_permit_country',
+        label: 'Do you have a legal work permit for Switzerland?',
+        type: 'BOOLEAN' as const,
+        required: true,
+        options: null,
+        orderIndex: 2,
+      },
+    ],
+    gateRules: [
+      {
+        questionKey: 'years_endur',
+        operator: 'GTE' as const,
+        value: 5,
+        orderIndex: 0,
+      },
+      {
+        questionKey: 'languages',
+        operator: 'INCLUDES_ANY' as const,
+        value: ['German', 'French'],
+        orderIndex: 1,
+      },
+      {
+        questionKey: 'work_permit_country',
+        operator: 'EQ' as const,
+        value: true,
+        orderIndex: 2,
+      },
+    ],
+  },
+  {
+    title: 'ETRM Business Analyst - Multiple Packages',
+    companyName: 'Trading Systems Consulting',
+    locationText: 'Sydney, Australia',
+    remotePolicy: 'HYBRID' as const,
+    contractType: 'CONTRACT' as const,
+    seniority: 'SENIOR' as const,
+    roleCategory: 'ETRM_BA' as const,
+    etrmPackages: ['Endur', 'Allegro', 'RightAngle'],
+    commodityTags: ['Power', 'Gas', 'LNG', 'Oil'],
+    budgetMin: 900,
+    budgetMax: 1100,
+    budgetCurrency: 'AUD',
+    budgetPeriod: 'DAY_RATE' as const,
+    budgetIsEstimate: false,
+    jdText: `ETRM Business Analyst - Multiple Packages
+
+**Role Summary**
+We need a senior ETRM Business Analyst with broad experience across multiple ETRM systems to support our consulting engagements.
+
+**Key Responsibilities**
+• Work on multiple ETRM systems (**Endur**, **Allegro**, **RightAngle**).
+• Gather requirements and document workflows across platforms.
+• Support implementation and upgrade projects.
+• Conduct system assessments and gap analyses.
+• Train end users and create documentation.
+• Work with clients across different industries.
+
+**Required Skills**
+• Experience with at least 2 major ETRM systems (3+ years each).
+• Strong understanding of energy trading workflows.
+• Excellent communication and client-facing skills.
+• Ability to work across multiple projects simultaneously.
+• Strong documentation and presentation skills.
+
+**Nice to Have**
+• Consulting experience.
+• Experience with system selection projects.
+• Knowledge of regulatory requirements (MiFID II, EMIR).`,
+    recruiterEmailTo: 'recruiter@example.com',
+    questions: [
+      {
+        key: 'years_endur',
+        label: 'How many years of hands-on Endur experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 0,
+      },
+      {
+        key: 'years_allegro',
+        label: 'How many years of hands-on Allegro experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 1,
+      },
+      {
+        key: 'years_rightangle',
+        label: 'How many years of hands-on RightAngle experience do you have?',
+        type: 'NUMBER' as const,
+        required: true,
+        options: null,
+        orderIndex: 2,
+      },
+    ],
+    gateRules: [
+      {
+        questionKey: 'years_endur',
+        operator: 'GTE' as const,
+        value: 3,
+        orderIndex: 0,
+      },
+      {
+        questionKey: 'years_allegro',
+        operator: 'GTE' as const,
+        value: 3,
+        orderIndex: 1,
+      },
+      {
+        questionKey: 'years_rightangle',
+        operator: 'GTE' as const,
+        value: 2,
+        orderIndex: 2,
+      },
+    ],
+  },
 ]
 
 async function main() {
