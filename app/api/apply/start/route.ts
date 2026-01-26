@@ -36,19 +36,19 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionToken = randomBytes(32).toString('hex')
-    const hasQuestionnaire = !!job.questionnaire
+    const hasQuestions = job.questionnaire?.questions && job.questionnaire.questions.length > 0
 
     const session = await prisma.applicationSession.create({
       data: {
         jobId: job.id,
-        questionnaireVersion: hasQuestionnaire ? job.questionnaire!.version : 0,
+        questionnaireVersion: job.questionnaire ? job.questionnaire.version : 0,
         sessionToken,
-        status: hasQuestionnaire ? 'IN_PROGRESS' : 'PASSED',
-        ...(hasQuestionnaire ? {} : { completedAt: now }),
+        status: hasQuestions ? 'IN_PROGRESS' : 'PASSED',
+        ...(!hasQuestions ? { completedAt: now } : {}),
       },
     })
 
-    const questions = hasQuestionnaire
+    const questions = hasQuestions
       ? job.questionnaire!.questions.map((q) => ({
           id: q.id,
           key: q.key,
