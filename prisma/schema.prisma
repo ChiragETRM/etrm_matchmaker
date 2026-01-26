@@ -45,6 +45,7 @@ model Job {
   @@index([slug])
   @@index([expiresAt])
   @@index([status])
+  @@index([recruiterEmailTo])
   @@map("jobs")
 }
 
@@ -119,6 +120,7 @@ model Application {
   candidateLinkedin String?  @map("candidate_linkedin")
   resumeFileId      String?  @map("resume_file_id")
   answersJson       String   @map("answers_json") @db.Text
+  recruiterStatus   String   @default("PENDING") @map("recruiter_status") // PENDING | SHORTLISTED | DISCARDED
   createdAt         DateTime @default(now()) @map("created_at")
 
   job               Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -127,6 +129,7 @@ model Application {
   session           ApplicationSession?
 
   @@index([jobId])
+  @@index([candidateEmail])
   @@map("applications")
 }
 

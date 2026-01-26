@@ -119,10 +119,16 @@ export default function Home() {
         </div>
 
         {/* Features */}
-        <div className="mt-16 text-center">
+        <div className="mt-16 text-center space-y-4">
           <p className="text-sm text-gray-500">
             ✨ No accounts required • 🚀 Instant job posting • ⚡ Quick application process
           </p>
+          <Link
+            href="/dashboard"
+            className="inline-block text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+          >
+            Candidate &amp; Recruiter dashboards →
+          </Link>
         </div>
       </div>
     </main>

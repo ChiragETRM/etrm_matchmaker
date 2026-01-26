@@ -62,12 +62,18 @@ function PostJobSuccessContent() {
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
           <Link
             href={jobUrl}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             View Job
+          </Link>
+          <Link
+            href="/jobs"
+            className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+          >
+            See it in job list
           </Link>
           <Link
             href="/post-job"

@@ -1,9 +1,5 @@
--- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New query)
--- Creates all tables required by the Curated Job Engine app
--- Idempotent: safe to run multiple times (skips existing tables/indexes/constraints).
-
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "jobs" (
+CREATE TABLE "jobs" (
     "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -34,7 +30,7 @@ CREATE TABLE IF NOT EXISTS "jobs" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "questionnaires" (
+CREATE TABLE "questionnaires" (
     "id" TEXT NOT NULL,
     "job_id" TEXT NOT NULL,
     "version" INTEGER NOT NULL DEFAULT 1,
@@ -44,7 +40,7 @@ CREATE TABLE IF NOT EXISTS "questionnaires" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "questions" (
+CREATE TABLE "questions" (
     "id" TEXT NOT NULL,
     "questionnaire_id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
@@ -58,7 +54,7 @@ CREATE TABLE IF NOT EXISTS "questions" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "gate_rules" (
+CREATE TABLE "gate_rules" (
     "id" TEXT NOT NULL,
     "questionnaire_id" TEXT NOT NULL,
     "question_key" TEXT NOT NULL,
@@ -70,7 +66,7 @@ CREATE TABLE IF NOT EXISTS "gate_rules" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "application_sessions" (
+CREATE TABLE "application_sessions" (
     "id" TEXT NOT NULL,
     "job_id" TEXT NOT NULL,
     "questionnaire_version" INTEGER NOT NULL,
@@ -85,7 +81,7 @@ CREATE TABLE IF NOT EXISTS "application_sessions" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "applications" (
+CREATE TABLE "applications" (
     "id" TEXT NOT NULL,
     "job_id" TEXT NOT NULL,
     "candidate_name" TEXT NOT NULL,
@@ -94,13 +90,14 @@ CREATE TABLE IF NOT EXISTS "applications" (
     "candidate_linkedin" TEXT,
     "resume_file_id" TEXT,
     "answers_json" TEXT NOT NULL,
+    "recruiter_status" TEXT NOT NULL DEFAULT 'PENDING',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "applications_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "file_objects" (
+CREATE TABLE "file_objects" (
     "id" TEXT NOT NULL,
     "provider" TEXT NOT NULL,
     "path" TEXT NOT NULL,
@@ -113,7 +110,7 @@ CREATE TABLE IF NOT EXISTS "file_objects" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "mail_logs" (
+CREATE TABLE "mail_logs" (
     "id" TEXT NOT NULL,
     "job_id" TEXT NOT NULL,
     "application_id" TEXT,
@@ -128,50 +125,77 @@ CREATE TABLE IF NOT EXISTS "mail_logs" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX IF NOT EXISTS "jobs_slug_key" ON "jobs"("slug");
-CREATE INDEX IF NOT EXISTS "jobs_slug_idx" ON "jobs"("slug");
-CREATE INDEX IF NOT EXISTS "jobs_expires_at_idx" ON "jobs"("expires_at");
-CREATE INDEX IF NOT EXISTS "jobs_status_idx" ON "jobs"("status");
+CREATE UNIQUE INDEX "jobs_slug_key" ON "jobs"("slug");
 
-CREATE UNIQUE INDEX IF NOT EXISTS "questionnaires_job_id_key" ON "questionnaires"("job_id");
-CREATE INDEX IF NOT EXISTS "questions_questionnaire_id_order_index_idx" ON "questions"("questionnaire_id", "order_index");
-CREATE INDEX IF NOT EXISTS "gate_rules_questionnaire_id_order_index_idx" ON "gate_rules"("questionnaire_id", "order_index");
+-- CreateIndex
+CREATE INDEX "jobs_slug_idx" ON "jobs"("slug");
 
-CREATE UNIQUE INDEX IF NOT EXISTS "application_sessions_session_token_key" ON "application_sessions"("session_token");
-CREATE UNIQUE INDEX IF NOT EXISTS "application_sessions_application_id_key" ON "application_sessions"("application_id");
-CREATE INDEX IF NOT EXISTS "application_sessions_session_token_idx" ON "application_sessions"("session_token");
-CREATE INDEX IF NOT EXISTS "application_sessions_job_id_idx" ON "application_sessions"("job_id");
+-- CreateIndex
+CREATE INDEX "jobs_expires_at_idx" ON "jobs"("expires_at");
 
-CREATE INDEX IF NOT EXISTS "applications_job_id_idx" ON "applications"("job_id");
-CREATE INDEX IF NOT EXISTS "file_objects_provider_path_idx" ON "file_objects"("provider", "path");
-CREATE INDEX IF NOT EXISTS "mail_logs_job_id_idx" ON "mail_logs"("job_id");
-CREATE INDEX IF NOT EXISTS "mail_logs_application_id_idx" ON "mail_logs"("application_id");
+-- CreateIndex
+CREATE INDEX "jobs_status_idx" ON "jobs"("status");
 
--- AddForeignKey (only if constraint does not exist)
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'questionnaires_job_id_fkey') THEN
-        ALTER TABLE "questionnaires" ADD CONSTRAINT "questionnaires_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'questions_questionnaire_id_fkey') THEN
-        ALTER TABLE "questions" ADD CONSTRAINT "questions_questionnaire_id_fkey" FOREIGN KEY ("questionnaire_id") REFERENCES "questionnaires"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'gate_rules_questionnaire_id_fkey') THEN
-        ALTER TABLE "gate_rules" ADD CONSTRAINT "gate_rules_questionnaire_id_fkey" FOREIGN KEY ("questionnaire_id") REFERENCES "questionnaires"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'application_sessions_job_id_fkey') THEN
-        ALTER TABLE "application_sessions" ADD CONSTRAINT "application_sessions_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'application_sessions_application_id_fkey') THEN
-        ALTER TABLE "application_sessions" ADD CONSTRAINT "application_sessions_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "applications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'applications_job_id_fkey') THEN
-        ALTER TABLE "applications" ADD CONSTRAINT "applications_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'applications_resume_file_id_fkey') THEN
-        ALTER TABLE "applications" ADD CONSTRAINT "applications_resume_file_id_fkey" FOREIGN KEY ("resume_file_id") REFERENCES "file_objects"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'mail_logs_application_id_fkey') THEN
-        ALTER TABLE "mail_logs" ADD CONSTRAINT "mail_logs_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "applications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-    END IF;
-END $$;
+-- CreateIndex
+CREATE INDEX "jobs_recruiter_email_to_idx" ON "jobs"("recruiter_email_to");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "questionnaires_job_id_key" ON "questionnaires"("job_id");
+
+-- CreateIndex
+CREATE INDEX "questions_questionnaire_id_order_index_idx" ON "questions"("questionnaire_id", "order_index");
+
+-- CreateIndex
+CREATE INDEX "gate_rules_questionnaire_id_order_index_idx" ON "gate_rules"("questionnaire_id", "order_index");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "application_sessions_session_token_key" ON "application_sessions"("session_token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "application_sessions_application_id_key" ON "application_sessions"("application_id");
+
+-- CreateIndex
+CREATE INDEX "application_sessions_session_token_idx" ON "application_sessions"("session_token");
+
+-- CreateIndex
+CREATE INDEX "application_sessions_job_id_idx" ON "application_sessions"("job_id");
+
+-- CreateIndex
+CREATE INDEX "applications_job_id_idx" ON "applications"("job_id");
+
+-- CreateIndex
+CREATE INDEX "applications_candidate_email_idx" ON "applications"("candidate_email");
+
+-- CreateIndex
+CREATE INDEX "file_objects_provider_path_idx" ON "file_objects"("provider", "path");
+
+-- CreateIndex
+CREATE INDEX "mail_logs_job_id_idx" ON "mail_logs"("job_id");
+
+-- CreateIndex
+CREATE INDEX "mail_logs_application_id_idx" ON "mail_logs"("application_id");
+
+-- AddForeignKey
+ALTER TABLE "questionnaires" ADD CONSTRAINT "questionnaires_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "questions" ADD CONSTRAINT "questions_questionnaire_id_fkey" FOREIGN KEY ("questionnaire_id") REFERENCES "questionnaires"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "gate_rules" ADD CONSTRAINT "gate_rules_questionnaire_id_fkey" FOREIGN KEY ("questionnaire_id") REFERENCES "questionnaires"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "application_sessions" ADD CONSTRAINT "application_sessions_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "application_sessions" ADD CONSTRAINT "application_sessions_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "applications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "applications" ADD CONSTRAINT "applications_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "jobs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "applications" ADD CONSTRAINT "applications_resume_file_id_fkey" FOREIGN KEY ("resume_file_id") REFERENCES "file_objects"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "mail_logs" ADD CONSTRAINT "mail_logs_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "applications"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+

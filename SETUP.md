@@ -51,6 +51,8 @@ The `public.jobs` (and other) tables must exist before the app can create jobs. 
 
    If you change the Prisma schema later, regenerate the SQL with `npm run db:sql-supabase`, then run the new script in the SQL Editor again (or use `npx prisma db push` with the direct URL).
 
+   **Recent schema changes:** `Application.recruiterStatus` (PENDING | SHORTLISTED | DISCARDED) and indexes on `recruiterEmailTo`, `candidateEmail`. Run `npx prisma generate` and `npx prisma db push` (or migrate) to apply.
+
 **Option 2 — Prisma from your machine**
 
 1. In Supabase: **Project Settings** → **Database** → copy the **Connection string** (URI).

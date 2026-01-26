@@ -35,19 +35,30 @@ export default function JobsPage() {
     roleCategory: '',
     etrmPackage: '',
     commodity: '',
+    nearMe: false,
   })
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null)
 
   const fetchJobs = useCallback(async () => {
     setLoading(true)
+    setDetectedCountry(null)
     try {
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value)
+        if (key === 'nearMe') {
+          if (value) params.append('nearMe', '1')
+        } else if (value && typeof value === 'string') {
+          params.append(key, value)
+        }
       })
 
-      const response = await fetch(`/api/public/jobs?${params.toString()}`)
+      const response = await fetch(`/api/public/jobs?${params.toString()}`, {
+        cache: 'no-store',
+        headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
+      })
       const data = await response.json()
       setJobs(data.jobs || [])
+      if (data.detectedCountry) setDetectedCountry(data.detectedCountry)
     } catch (error) {
       console.error('Error fetching jobs:', error)
     } finally {
@@ -62,12 +73,42 @@ export default function JobsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Browse Jobs</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <h1 className="text-3xl font-bold">Browse Jobs</h1>
+          <Link
+            href="/filter-jobs"
+            className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+          >
+            Filter jobs for me
+          </Link>
+        </div>
+
+        {detectedCountry && (
+          <p className="text-sm text-indigo-600 mb-4">
+            Showing jobs near you ({detectedCountry})
+          </p>
+        )}
 
         {/* Filters */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <h2 className="text-lg font-semibold mb-4">Filters</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="col-span-2 md:col-span-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.nearMe}
+                  onChange={(e) =>
+                    setFilters({ ...filters, nearMe: e.target.checked })
+                  }
+                  className="w-4 h-4 text-indigo-600 rounded"
+                />
+                <span className="font-medium">Filter by my location</span>
+              </label>
+              <p className="text-sm text-gray-500 mt-1">
+                Uses your IP to show jobs in your country
+              </p>
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1">
                 Remote Policy

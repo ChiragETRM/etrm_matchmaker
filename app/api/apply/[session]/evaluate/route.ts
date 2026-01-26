@@ -75,6 +75,7 @@ export async function POST(
     return NextResponse.json({
       passed: evaluation.passed,
       status,
+      failedRules: evaluation.failedRules,
     })
   } catch (error) {
     console.error('Error evaluating application:', error)

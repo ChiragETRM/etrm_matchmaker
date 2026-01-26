@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
+import { renderSimpleMarkdown } from '@/lib/markdown'
 
 interface GateRule {
   type: 'years_experience' | 'language' | 'commodity' | 'work_permit' | 'other'
@@ -589,11 +590,20 @@ export default function PostJobPage() {
             </div>
             <textarea
               {...register('jdText', { required: true })}
-              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none"
-              rows={15}
-              placeholder="Describe the role, responsibilities, and requirements..."
+              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none font-mono text-sm"
+              rows={12}
+              placeholder="Describe the role, responsibilities, and requirements. Use **text** for bold."
               required
             />
+            <div className="mt-4">
+              <p className="text-sm font-semibold text-gray-700 mb-2">Preview (use **text** for bold)</p>
+              <div
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 bg-gray-50 text-gray-800 whitespace-pre-wrap prose prose-sm max-w-none min-h-[120px]"
+                dangerouslySetInnerHTML={{
+                  __html: renderSimpleMarkdown(watch('jdText') || ''),
+                }}
+              />
+            </div>
           </section>
 
           {/* Minimum Requirements */}

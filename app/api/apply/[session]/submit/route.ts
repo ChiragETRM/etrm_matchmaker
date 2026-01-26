@@ -107,7 +107,7 @@ export async function POST(
       ? JSON.parse(session.answersJson)
       : {}
 
-    // Upload resume
+    // Upload resume (metadata for dashboard) and prepare email attachment
     let fileId: string | null = null
     try {
       const uploadResult = await uploadFile(resume, 'resumes')
@@ -119,6 +119,13 @@ export async function POST(
         { status: 500 }
       )
     }
+    const resumeBuffer = Buffer.from(await resume.arrayBuffer())
+    const resumeContentType =
+      resume.type === 'application/pdf'
+        ? 'application/pdf'
+        : resume.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'application/msword'
 
     // Create application
     const application = await prisma.application.create({
@@ -158,23 +165,22 @@ export async function POST(
       })
       .join('') || ''
 
-    const resumeUrl = fileId
-      ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/files/${fileId}`
-      : 'N/A'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const resumeUrl = fileId ? `${baseUrl}/api/files/${fileId}` : 'N/A'
+    const jobLink = `${baseUrl}/jobs/${session.job.slug}`
 
     const emailHtml = `
       <h2>New Qualified Candidate Application</h2>
       
-      <h3>Job Details</h3>
+      <h3>Job</h3>
       <ul>
-        <li><strong>Title:</strong> ${session.job.title}</li>
+        <li><strong>Role:</strong> ${session.job.title}</li>
         <li><strong>Location:</strong> ${session.job.locationText}</li>
         <li><strong>ETRM Packages:</strong> ${session.job.etrmPackages.join(', ') || 'N/A'}</li>
-        <li><strong>Created:</strong> ${session.job.createdAt.toLocaleDateString()}</li>
-        <li><strong>Expires:</strong> ${session.job.expiresAt.toLocaleDateString()}</li>
+        <li><strong>Link to job:</strong> <a href="${jobLink}">${jobLink}</a></li>
       </ul>
 
-      <h3>Candidate Details</h3>
+      <h3>Candidate</h3>
       <ul>
         <li><strong>Name:</strong> ${data.candidateName}</li>
         <li><strong>Email:</strong> ${data.candidateEmail}</li>
@@ -182,13 +188,13 @@ export async function POST(
         <li><strong>LinkedIn:</strong> ${data.candidateLinkedin || 'N/A'}</li>
       </ul>
 
-      <h3>Questionnaire Answers</h3>
+      <h3>Resume</h3>
+      <p>CV attached to this email. <a href="${resumeUrl}">Or download here</a>.</p>
+
+      <h3>Questions &amp; Answers</h3>
       <table border="1" cellpadding="5" cellspacing="0">
         ${answersHtml}
       </table>
-
-      <h3>Resume</h3>
-      <p><a href="${resumeUrl}">Download Resume</a></p>
     `
 
     const emailResult = await sendEmail({
@@ -196,6 +202,13 @@ export async function POST(
       cc: session.job.recruiterEmailCc,
       subject,
       html: emailHtml,
+      attachments: [
+        {
+          filename: resume.name || 'resume',
+          content: resumeBuffer,
+          contentType: resumeContentType,
+        },
+      ],
     })
 
     // Log email

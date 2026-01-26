@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { renderSimpleMarkdown } from '@/lib/markdown'
 
 interface Job {
   id: string
@@ -42,7 +43,10 @@ export default function JobDetailPage() {
   const fetchJob = async (slug: string) => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/public/jobs/${slug}`)
+      const response = await fetch(`/api/public/jobs/${slug}`, {
+        cache: 'no-store',
+        headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
+      })
       if (response.ok) {
         const data = await response.json()
         setJob(data.job)
@@ -150,9 +154,12 @@ export default function JobDetailPage() {
 
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Job Description</h2>
-            <div className="prose max-w-none whitespace-pre-wrap">
-              {job.jdText}
-            </div>
+            <div
+              className="prose max-w-none whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{
+                __html: renderSimpleMarkdown(job.jdText),
+              }}
+            />
           </div>
 
           <div className="border-t pt-6">
