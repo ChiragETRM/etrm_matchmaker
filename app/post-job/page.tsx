@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { renderSimpleMarkdown } from '@/lib/markdown'
 
 interface GateRule {
@@ -103,6 +104,7 @@ You break things before traders do. You make sure **Endur** behaves exactly as t
 
 export default function PostJobPage() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [budgetValue, setBudgetValue] = useState(150)
 
@@ -127,6 +129,13 @@ export default function PostJobPage() {
       gateRules: [] as GateRule[],
     },
   })
+
+  // Set recruiter email from session when authenticated
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.email) {
+      setValue('recruiterEmailTo', session.user.email)
+    }
+  }, [status, session, setValue])
 
   const {
     fields: gateRuleFields,
@@ -847,6 +856,21 @@ export default function PostJobPage() {
           {/* Your Email */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Your Email</h2>
+            {session?.user && (
+              <div className="flex items-center gap-3 mb-4 p-3 bg-green-50 border border-green-200 rounded-xl">
+                {session.user.image && (
+                  <img
+                    src={session.user.image}
+                    alt=""
+                    className="w-10 h-10 rounded-full"
+                  />
+                )}
+                <div>
+                  <p className="font-medium text-gray-900">{session.user.name}</p>
+                  <p className="text-sm text-gray-600">Signed in with Google</p>
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-semibold mb-2 text-gray-700">
                 Your Email *
@@ -858,6 +882,9 @@ export default function PostJobPage() {
                 placeholder="your.email@example.com"
                 required
               />
+              <p className="text-sm text-gray-500 mt-2">
+                Candidates will be notified to this email address.
+              </p>
             </div>
           </section>
 

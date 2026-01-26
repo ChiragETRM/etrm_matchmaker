@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Nav from './components/Nav'
+import SessionProvider from './components/SessionProvider'
 
 export const metadata: Metadata = {
   title: 'Curated Job Engine',
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-50">
-        <Nav />
-        {children}
+        <SessionProvider>
+          <Nav />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   )

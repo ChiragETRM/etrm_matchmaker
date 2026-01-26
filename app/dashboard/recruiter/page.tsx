@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 interface AppItem {
@@ -28,17 +29,19 @@ interface JobItem {
 }
 
 export default function RecruiterDashboardPage() {
-  const [email, setEmail] = useState('')
+  const { data: session, status } = useSession()
   const [loading, setLoading] = useState(false)
   const [jobs, setJobs] = useState<JobItem[] | null>(null)
 
+  const email = session?.user?.email || ''
+
   const fetchData = async () => {
-    if (!email.trim()) return
+    if (!email) return
     setLoading(true)
     setJobs(null)
     try {
       const res = await fetch(
-        `/api/dashboard/recruiter?email=${encodeURIComponent(email.trim())}`,
+        `/api/dashboard/recruiter?email=${encodeURIComponent(email)}`,
         { cache: 'no-store' }
       )
       const data = await res.json()
@@ -50,24 +53,41 @@ export default function RecruiterDashboardPage() {
     }
   }
 
+  // Auto-fetch when session is loaded
+  useEffect(() => {
+    if (status === 'authenticated' && email) {
+      fetchData()
+    }
+  }, [status, email])
+
   const updateStatus = async (
     applicationId: string,
-    status: 'SHORTLISTED' | 'DISCARDED'
+    newStatus: 'SHORTLISTED' | 'DISCARDED'
   ) => {
     try {
       const res = await fetch('/api/dashboard/recruiter/application', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email.trim(),
+          email,
           applicationId,
-          status,
+          status: newStatus,
         }),
       })
       if (res.ok) fetchData()
     } catch (e) {
       console.error(e)
     }
+  }
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        <div className="max-w-4xl mx-auto text-center text-gray-500">
+          Loading...
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -78,28 +98,31 @@ export default function RecruiterDashboardPage() {
         </Link>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Recruiter dashboard</h1>
         <p className="text-gray-600 mb-8">
-          Enter the email you use for job postings to see your jobs and candidates.
+          View your job postings and manage candidates. Showing jobs for{' '}
+          <strong>{email}</strong>.
         </p>
 
         <div className="bg-white rounded-xl shadow p-6 mb-8">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your email
-          </label>
-          <div className="flex gap-3">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchData()}
-              placeholder="recruiter@example.com"
-              className="flex-1 border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-indigo-500 outline-none"
-            />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {session?.user?.image && (
+                <img
+                  src={session.user.image}
+                  alt=""
+                  className="w-10 h-10 rounded-full"
+                />
+              )}
+              <div>
+                <p className="font-medium text-gray-900">{session?.user?.name}</p>
+                <p className="text-sm text-gray-500">{email}</p>
+              </div>
+            </div>
             <button
               onClick={fetchData}
-              disabled={loading || !email.trim()}
+              disabled={loading}
               className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
             >
-              {loading ? 'Loading…' : 'View'}
+              {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
         </div>

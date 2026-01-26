@@ -90,6 +90,13 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/curated_job_engine?s
 # App URL (required)
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
+# NextAuth.js (required for Google SSO)
+AUTH_SECRET="your-random-32-character-secret-here"
+
+# Google OAuth (required for Google SSO)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
 # For MVP, you can skip these initially:
 # - File storage (will use placeholder)
 # - Email provider (will fail gracefully)
@@ -101,6 +108,38 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/curated_job_engine?schema=public"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+AUTH_SECRET="generate-a-random-secret-for-local-dev"
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+```
+
+### 3a. Set Up Google OAuth (for SSO)
+
+To enable Google Sign-In:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Go to **APIs & Services** > **Credentials**
+4. Click **Create Credentials** > **OAuth client ID**
+5. Choose **Web application**
+6. Configure:
+   - **Name**: Curated Job Engine (or any name)
+   - **Authorized JavaScript origins**:
+     - `http://localhost:3000` (for local dev)
+     - `https://your-production-domain.com` (for production)
+   - **Authorized redirect URIs**:
+     - `http://localhost:3000/api/auth/callback/google` (for local dev)
+     - `https://your-production-domain.com/api/auth/callback/google` (for production)
+7. Copy the **Client ID** and **Client Secret** to your `.env` file
+
+**Generate AUTH_SECRET:**
+
+```bash
+# On Linux/Mac
+openssl rand -base64 32
+
+# Or use Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 ### 4. Run Database Migrations
