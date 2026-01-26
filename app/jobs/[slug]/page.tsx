@@ -156,7 +156,7 @@ export default function JobDetailPage() {
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Job Description</h2>
             <div
-              className="prose max-w-none whitespace-pre-wrap"
+              className="prose max-w-none text-gray-700"
               dangerouslySetInnerHTML={{
                 __html: renderSimpleMarkdown(job.jdText),
               }}

@@ -14,11 +14,63 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Parse **bold** markdown and return HTML string.
+ * Parse markdown-like formatting and return HTML string.
+ * Supports: **bold**, bullet points (• or -), and line breaks.
  * Use with dangerouslySetInnerHTML only when the source is trusted (e.g. job poster JD).
  */
 export function renderSimpleMarkdown(text: string): string {
   if (!text || typeof text !== 'string') return ''
+
   const escaped = escapeHtml(text)
-  return escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+
+  // Split by newlines to process line by line
+  const lines = escaped.split('\n')
+  const processedLines: string[] = []
+  let inList = false
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim()
+
+    // Handle bold text
+    line = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+
+    // Check if this is a bullet point line
+    const bulletMatch = line.match(/^[•\-\*]\s*(.*)$/)
+
+    if (bulletMatch) {
+      if (!inList) {
+        processedLines.push('<ul class="list-disc list-inside space-y-1 my-2">')
+        inList = true
+      }
+      processedLines.push(`<li>${bulletMatch[1]}</li>`)
+    } else {
+      // Close list if we were in one
+      if (inList) {
+        processedLines.push('</ul>')
+        inList = false
+      }
+
+      // Empty line = paragraph break
+      if (line === '') {
+        processedLines.push('<br />')
+      } else {
+        // Check if line looks like a header (ends with colon or all caps section)
+        const isHeader = /^[A-Z][A-Za-z\s]+:$/.test(line) ||
+                        /^(Summary|Responsibilities|Requirements|Skills|Qualifications|Nice to Have|About|Overview|Description|Experience|Benefits|What you|Who you|Your role|The role|Key|Required|Preferred|Duties|Tasks):?$/i.test(line.replace(/<[^>]*>/g, ''))
+
+        if (isHeader) {
+          processedLines.push(`<p class="font-semibold mt-4 mb-2">${line}</p>`)
+        } else {
+          processedLines.push(`<p class="mb-2">${line}</p>`)
+        }
+      }
+    }
+  }
+
+  // Close any open list
+  if (inList) {
+    processedLines.push('</ul>')
+  }
+
+  return processedLines.join('\n')
 }
