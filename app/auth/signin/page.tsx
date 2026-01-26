@@ -1,47 +1,78 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { signIn, useSession } from 'next-auth/react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
 function SignInContent() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const { data: session, status } = useSession()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const error = searchParams.get('error')
   const [redirecting, setRedirecting] = useState(false)
-  const redirectAttempted = useRef(false)
+  const [sessionError, setSessionError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (status === 'authenticated' && session && !redirectAttempted.current) {
-      redirectAttempted.current = true
+    if (status === 'authenticated' && session && !redirecting) {
       setRedirecting(true)
 
-      // Decode the callbackUrl in case it's URL-encoded
-      let decodedUrl = callbackUrl
-      try {
-        decodedUrl = decodeURIComponent(callbackUrl)
-      } catch {
-        // If decoding fails, use the original
-        decodedUrl = callbackUrl
-      }
-      // Ensure it starts with /
-      if (!decodedUrl.startsWith('/')) {
-        decodedUrl = '/' + decodedUrl
-      }
+      // Verify session server-side before redirecting
+      fetch('/api/auth/session')
+        .then(res => res.json())
+        .then(serverSession => {
+          if (!serverSession?.user) {
+            // Server doesn't see the session - likely a cookie issue
+            setSessionError('Session verification failed. Please sign in again.')
+            setRedirecting(false)
+            return
+          }
 
-      // Use window.location for more reliable redirect
-      // This avoids issues with Next.js router in certain edge cases
-      window.location.href = decodedUrl
+          // Session verified - safe to redirect
+          let decodedUrl = callbackUrl
+          try {
+            decodedUrl = decodeURIComponent(callbackUrl)
+          } catch {
+            decodedUrl = callbackUrl
+          }
+          if (!decodedUrl.startsWith('/')) {
+            decodedUrl = '/' + decodedUrl
+          }
+
+          window.location.href = decodedUrl
+        })
+        .catch(err => {
+          console.error('Session verification error:', err)
+          setSessionError('Failed to verify session. Please try again.')
+          setRedirecting(false)
+        })
     }
-  }, [status, session, callbackUrl])
+  }, [status, session, callbackUrl, redirecting])
 
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
+      </div>
+    )
+  }
+
+  if (sessionError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-600 mb-4">Session Error</div>
+          <p className="text-gray-600 mb-4">{sessionError}</p>
+          <button
+            onClick={() => {
+              setSessionError(null)
+              signIn('google', { callbackUrl })
+            }}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Sign in with Google
+          </button>
+        </div>
       </div>
     )
   }
