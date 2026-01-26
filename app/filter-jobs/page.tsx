@@ -86,7 +86,7 @@ export default function FilterJobsPage() {
           <Link href="/jobs" className="text-indigo-600 hover:underline mb-4 inline-block">
             ← Back to jobs
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Filter jobs for me</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Eligible Jobs</h1>
           <p className="text-gray-600 mt-2">
             Answer a few questions. We&apos;ll show only roles that match your profile.
             Answer all questions for the best results.

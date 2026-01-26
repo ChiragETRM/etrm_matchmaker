@@ -35,34 +35,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Job has expired' }, { status: 410 })
     }
 
-    if (!job.questionnaire) {
-      return NextResponse.json(
-        { error: 'Job has no questionnaire' },
-        { status: 400 }
-      )
-    }
-
     const sessionToken = randomBytes(32).toString('hex')
+    const hasQuestionnaire = !!job.questionnaire
 
     const session = await prisma.applicationSession.create({
       data: {
         jobId: job.id,
-        questionnaireVersion: job.questionnaire.version,
+        questionnaireVersion: hasQuestionnaire ? job.questionnaire!.version : 0,
         sessionToken,
-        status: 'IN_PROGRESS',
+        status: hasQuestionnaire ? 'IN_PROGRESS' : 'PASSED',
+        ...(hasQuestionnaire ? {} : { completedAt: now }),
       },
     })
 
-    // Return questionnaire without gate rules (candidate shouldn't see them)
-    const questions = job.questionnaire.questions.map((q) => ({
-      id: q.id,
-      key: q.key,
-      label: q.label,
-      type: q.type,
-      required: q.required,
-      options: q.optionsJson ? JSON.parse(q.optionsJson) : null,
-      orderIndex: q.orderIndex,
-    }))
+    const questions = hasQuestionnaire
+      ? job.questionnaire!.questions.map((q) => ({
+          id: q.id,
+          key: q.key,
+          label: q.label,
+          type: q.type,
+          required: q.required,
+          options: q.optionsJson ? JSON.parse(q.optionsJson) : null,
+          orderIndex: q.orderIndex,
+        }))
+      : []
 
     return NextResponse.json({
       sessionToken: session.sessionToken,

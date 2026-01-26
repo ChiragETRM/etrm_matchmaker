@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { renderSimpleMarkdown } from '@/lib/markdown'
+import { daysLeftToApply } from '@/lib/utils'
 
 interface Job {
   id: string
@@ -172,7 +173,7 @@ export default function JobDetailPage() {
           </div>
 
           <div className="mt-4 text-sm text-gray-500 text-center">
-            Expires on {new Date(job.expiresAt).toLocaleDateString()}
+            {daysLeftToApply(job.expiresAt)}
           </div>
         </div>
       </div>

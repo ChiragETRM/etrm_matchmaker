@@ -13,7 +13,7 @@ export default function Nav() {
           href="/"
           className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition"
         >
-          Curated Job Engine
+          ETRM Match Maker
         </Link>
         <div className="flex flex-wrap items-center gap-6 text-sm">
           <Link
@@ -26,7 +26,7 @@ export default function Nav() {
             href="/filter-jobs"
             className="text-gray-600 hover:text-indigo-600 font-medium transition"
           >
-            Filter for me
+            Eligible Jobs
           </Link>
           <Link
             href="/post-job"

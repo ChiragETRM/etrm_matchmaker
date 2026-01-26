@@ -31,6 +31,12 @@ export default function ApplyPage() {
     }
   }, [params.jobId])
 
+  useEffect(() => {
+    if (!loading && questions.length === 0 && sessionToken) {
+      router.replace(`/apply/${sessionToken}/submit`)
+    }
+  }, [loading, questions.length, sessionToken, router])
+
   const startApplication = async (jobId: string) => {
     setLoading(true)
     try {
@@ -125,10 +131,20 @@ export default function ApplyPage() {
     )
   }
 
-  if (questions.length === 0) {
+  if (!loading && questions.length === 0) {
+    if (sessionToken) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div>Redirecting to application...</div>
+        </div>
+      )
+    }
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div>No questions found</div>
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Unable to start application.</p>
+          <a href="/jobs" className="text-indigo-600 hover:underline">Browse jobs</a>
+        </div>
       </div>
     )
   }

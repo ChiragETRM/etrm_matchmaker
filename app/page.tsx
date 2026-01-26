@@ -7,13 +7,10 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-6xl font-extrabold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Curated Job Engine
+            ETRM Match Maker
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
             ETRM-focused job posting and application system
-          </p>
-          <p className="text-lg text-gray-700 font-medium max-w-2xl mx-auto italic">
-            We promise not to call you until you ask us! We won&apos;t even ask for your number!
           </p>
         </div>
 
@@ -121,7 +118,7 @@ export default function Home() {
         {/* Features */}
         <div className="mt-16 text-center space-y-4">
           <p className="text-sm text-gray-500">
-            ✨ No accounts required • 🚀 Instant job posting • ⚡ Quick application process
+            Instant job posting • Quick application process
           </p>
           <Link
             href="/dashboard"

@@ -1,19 +1,44 @@
 'use client'
 
-import { signIn } from 'next-auth/react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
+import { signIn, useSession } from 'next-auth/react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 
 function SignInContent() {
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard/recruiter'
+  const router = useRouter()
+  const { data: session, status } = useSession()
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const error = searchParams.get('error')
+
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      router.replace(callbackUrl)
+    }
+  }, [status, session, callbackUrl, router])
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    )
+  }
+
+  if (status === 'authenticated') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Redirecting...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h1 className="text-center text-3xl font-bold text-gray-900">
-          Curated Job Engine
+          ETRM Match Maker
         </h1>
         <h2 className="mt-6 text-center text-xl text-gray-600">
           Sign in to your account
@@ -61,8 +86,8 @@ function SignInContent() {
 
           <div className="mt-6">
             <p className="text-center text-sm text-gray-500">
-              Sign in with your Google account to access the recruiter dashboard
-              and manage your job postings.
+              Sign in with your Google account to access the recruiter and
+              candidate dashboards.
             </p>
           </div>
         </div>

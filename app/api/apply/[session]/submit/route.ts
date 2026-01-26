@@ -152,7 +152,8 @@ export async function POST(
     const subjectPrefix = session.job.emailSubjectPrefix || 'Qualified Candidate'
     const subject = `${subjectPrefix} | ${session.job.title} | ${data.candidateName} | ${session.job.locationText}`
 
-    const answersHtml = session.job.questionnaire?.questions
+    const questions = session.job.questionnaire?.questions ?? []
+    const answersHtml = questions
       .map((q) => {
         const answer = answers[q.key]
         let displayValue = answer
@@ -163,7 +164,7 @@ export async function POST(
         }
         return `<tr><td><strong>${q.label}</strong></td><td>${displayValue || 'N/A'}</td></tr>`
       })
-      .join('') || ''
+      .join('')
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const resumeUrl = fileId ? `${baseUrl}/api/files/${fileId}` : 'N/A'
@@ -190,11 +191,12 @@ export async function POST(
 
       <h3>Resume</h3>
       <p>CV attached to this email. <a href="${resumeUrl}">Or download here</a>.</p>
-
+      ${answersHtml ? `
       <h3>Questions &amp; Answers</h3>
       <table border="1" cellpadding="5" cellspacing="0">
         ${answersHtml}
       </table>
+      ` : ''}
     `
 
     const emailResult = await sendEmail({
