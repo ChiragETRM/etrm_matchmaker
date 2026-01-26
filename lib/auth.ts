@@ -71,6 +71,19 @@ try {
         }
         return session
       },
+      redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+        // Sanitize redirect URLs to prevent malformed URLs
+        // If it's a relative URL, return it as-is
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`
+        }
+        // If it's the same origin, allow it
+        if (url.startsWith(baseUrl)) {
+          return url
+        }
+        // Default to base URL
+        return baseUrl
+      },
       authorized({ auth, request }: { auth: any; request: any }) {
         // This callback is used by the middleware
         // Return true to allow access, false to redirect to signin

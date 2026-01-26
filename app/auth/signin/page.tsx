@@ -21,10 +21,24 @@ function SignInContent() {
       } catch {
         decodedUrl = callbackUrl
       }
-      // Ensure it starts with /
-      if (!decodedUrl.startsWith('/')) {
-        decodedUrl = '/' + decodedUrl
+
+      // Extract pathname if it's an absolute URL
+      try {
+        const urlObj = new URL(decodedUrl, window.location.origin)
+        // Only use the pathname if it's the same origin
+        if (urlObj.origin === window.location.origin) {
+          decodedUrl = urlObj.pathname + urlObj.search
+        } else {
+          // Different origin - default to dashboard for safety
+          decodedUrl = '/dashboard'
+        }
+      } catch {
+        // If URL parsing fails, ensure it starts with /
+        if (!decodedUrl.startsWith('/')) {
+          decodedUrl = '/' + decodedUrl
+        }
       }
+
       // Use router.push for client-side navigation
       router.push(decodedUrl)
     }
