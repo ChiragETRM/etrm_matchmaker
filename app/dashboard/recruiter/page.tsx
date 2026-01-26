@@ -210,38 +210,57 @@ export default function RecruiterDashboardPage() {
                                 )}
                               </div>
                             </div>
-                            {a.resumeUrl && (
+                            <div className="mt-3 flex flex-wrap gap-3">
+                              {a.resumeUrl && (
+                                <a
+                                  href={a.resumeUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-indigo-600 hover:underline text-sm font-medium inline-flex items-center gap-1"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                  View CV / Resume
+                                </a>
+                              )}
                               <a
-                                href={a.resumeUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-indigo-600 hover:underline text-sm mt-2 inline-block"
+                                href={`mailto:${a.candidateEmail}`}
+                                className="text-indigo-600 hover:underline text-sm font-medium inline-flex items-center gap-1"
                               >
-                                CV / Resume
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                Email Candidate
                               </a>
-                            )}
+                            </div>
                             <details className="mt-3">
-                              <summary className="text-sm text-gray-600 cursor-pointer">
-                                Q&amp;A
+                              <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
+                                View Answers to Hard Gates & Questions
                               </summary>
-                              <div className="mt-2 text-sm text-gray-600 bg-gray-50 rounded p-3">
+                              <div className="mt-3 text-sm text-gray-600 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p className="text-xs text-gray-500 mb-3 font-medium">
+                                  All candidates shown here have passed the hard gate requirements.
+                                </p>
                                 {(() => {
                                   try {
                                     const ans = JSON.parse(a.answersJson)
                                     return (
-                                      <ul className="space-y-1">
+                                      <ul className="space-y-2">
                                         {(a.questions || []).map((q) => (
-                                          <li key={q.key}>
-                                            <strong>{q.label}</strong>:{' '}
-                                            {Array.isArray(ans[q.key])
-                                              ? (ans[q.key] as string[]).join(', ')
-                                              : String(ans[q.key] ?? '—')}
+                                          <li key={q.key} className="border-b border-gray-200 pb-2 last:border-0 last:pb-0">
+                                            <strong className="text-gray-900">{q.label}</strong>
+                                            <div className="mt-1 text-gray-700">
+                                              {Array.isArray(ans[q.key])
+                                                ? (ans[q.key] as string[]).join(', ')
+                                                : String(ans[q.key] ?? '—')}
+                                            </div>
                                           </li>
                                         ))}
                                       </ul>
                                     )
                                   } catch {
-                                    return <pre className="whitespace-pre-wrap">{a.answersJson}</pre>
+                                    return <pre className="whitespace-pre-wrap text-xs">{a.answersJson}</pre>
                                   }
                                 })()}
                               </div>

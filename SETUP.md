@@ -92,6 +92,10 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 # NextAuth.js (required for Google SSO)
 AUTH_SECRET="your-random-32-character-secret-here"
+# AUTH_URL is required for NextAuth v5 in production (Vercel)
+# For local dev, this can be omitted (defaults to NEXT_PUBLIC_APP_URL)
+# For production on Vercel, set: AUTH_URL="https://your-domain.vercel.app"
+AUTH_URL="http://localhost:3000"  # Optional for local dev
 
 # Google OAuth (required for Google SSO)
 GOOGLE_CLIENT_ID="your-google-client-id"

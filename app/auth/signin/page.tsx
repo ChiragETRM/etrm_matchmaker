@@ -15,11 +15,21 @@ function SignInContent() {
   useEffect(() => {
     if (status === 'authenticated' && session) {
       // Decode the callbackUrl in case it's URL-encoded
-      const decodedUrl = decodeURIComponent(callbackUrl)
-      // Use window.location for a more reliable redirect
-      window.location.href = decodedUrl
+      let decodedUrl = callbackUrl
+      try {
+        decodedUrl = decodeURIComponent(callbackUrl)
+      } catch {
+        // If decoding fails, use the original
+        decodedUrl = callbackUrl
+      }
+      // Ensure it starts with /
+      if (!decodedUrl.startsWith('/')) {
+        decodedUrl = '/' + decodedUrl
+      }
+      // Use router.push for client-side navigation to avoid full page reload
+      router.push(decodedUrl)
     }
-  }, [status, session, callbackUrl])
+  }, [status, session, callbackUrl, router])
 
   if (status === 'loading') {
     return (

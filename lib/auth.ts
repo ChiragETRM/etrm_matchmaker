@@ -19,7 +19,11 @@ fetch('http://127.0.0.1:7245/ingest/1b0fe892-c4ac-43c7-8e8f-e035e4b05662',{metho
 const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
-const authUrl = process.env.AUTH_URL
+// AUTH_URL is required for NextAuth v5 in production
+// Fallback to NEXT_PUBLIC_APP_URL or construct from VERCEL_URL if available
+const authUrl = process.env.AUTH_URL || 
+  process.env.NEXT_PUBLIC_APP_URL || 
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
 
 // #region agent log
 console.error('[AUTH DEBUG] Env vars extracted - before NextAuth init', {
@@ -35,6 +39,14 @@ console.error('[AUTH DEBUG] Env vars extracted - before NextAuth init', {
 });
 fetch('http://127.0.0.1:7245/ingest/1b0fe892-c4ac-43c7-8e8f-e035e4b05662',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/auth.ts:18',message:'Env vars extracted - before NextAuth init',data:{authSecretExists:!!authSecret,authSecretLength:authSecret?.length||0,googleClientIdExists:!!googleClientId,googleClientIdLength:googleClientId?.length||0,googleClientSecretExists:!!googleClientSecret,googleClientSecretLength:googleClientSecret?.length||0,authUrlExists:!!authUrl,authUrlValue:authUrl||'NOT_SET'},timestamp:Date.now(),sessionId:'debug-session',runId:'init',hypothesisId:'A,B,C'})}).catch(()=>{});
 // #endregion
+
+// Validate required configuration
+if (!authSecret) {
+  throw new Error('AUTH_SECRET or NEXTAUTH_SECRET environment variable is required')
+}
+if (!googleClientId || !googleClientSecret) {
+  throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are required')
+}
 
 let nextAuthConfig: any
 try {
