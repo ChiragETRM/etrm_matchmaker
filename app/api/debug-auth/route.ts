@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 // Diagnostic endpoint to check auth configuration
 // This helps debug configuration issues without exposing secrets
+// Moved to /api/debug-auth to avoid conflict with NextAuth catch-all route
 export async function GET() {
   const envCheck = {
     hasAuthSecret: !!process.env.AUTH_SECRET,
