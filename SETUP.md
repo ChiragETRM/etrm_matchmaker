@@ -69,7 +69,7 @@ The `public.jobs` (and other) tables must exist before the app can create jobs. 
    ```
    Or use the setup script: `npm run db:setup`.
 
-For **Vercel**: Ensure `DATABASE_URL` and `DIRECT_URL` are set in your project’s environment variables. The build runs `prisma db push` before `next build`, Add `DIRECT_URL` (Supabase direct connection, port 5432) in Vercel → Settings → Environment Variables, then redeploy. Tables will be created on the next deploy—no manual SQL or local migration needed.
+For **Vercel**: Set `DATABASE_URL` (Supabase pooler, port 6543) in Vercel environment variables. The build does **not** run migrations—Vercel’s build environment often cannot reach Supabase’s direct DB (port 5432). Create tables **before** deploying: use **Option 1** (Supabase SQL Editor + `prisma/supabase-init.sql`) or **Option 2** (run `npx prisma db push` locally with `DIRECT_URL` in `.env`), then deploy.
 
 ### 3. Configure Environment Variables
 
@@ -183,6 +183,20 @@ npx prisma generate
 # Reset database (WARNING: deletes all data)
 npx prisma migrate reset
 ```
+
+### `prisma db push` — "Can't reach database server" (P1001)
+
+Run the diagnostic script:
+
+```bash
+npm run db:troubleshoot-push
+```
+
+Common causes:
+
+- **IPv6-only DB**: Supabase direct DB often has no IPv4. Many home networks don’t have IPv6. **Fix:** Supabase Dashboard → Project Settings → Database → enable **IPv4 add-on** (if available). Or use **SQL Editor** + `prisma/supabase-init.sql` instead of `prisma db push`.
+- **Firewall**: If the script reports "Access is denied" when adding a rule, run **PowerShell as Administrator** and run `npm run db:troubleshoot-push` again.
+- **VPN / network**: Try turning VPN off, or use another network (e.g. phone hotspot).
 
 ### Port Already in Use
 

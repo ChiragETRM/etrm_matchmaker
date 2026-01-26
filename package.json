@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --accept-data-loss && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
@@ -14,6 +14,7 @@
     "db:migrate-prod": "tsx scripts/migrate-db.ts",
     "db:setup": "tsx scripts/setup-database.ts",
     "db:diagnose": "tsx scripts/fix-pooler-issue.ts",
+    "db:troubleshoot-push": "powershell -ExecutionPolicy Bypass -File scripts/troubleshoot-db-push.ps1",
     "db:sql-supabase": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/supabase-init.sql",
     "db:studio": "prisma studio",
     "seed:jobs": "tsx scripts/seed-jobs.ts"
