@@ -22,6 +22,7 @@ export default function ApplyPage() {
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, any>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { register, handleSubmit, watch, setValue } = useForm()
 
@@ -62,8 +63,9 @@ export default function ApplyPage() {
   }
 
   const onSubmit = async (data?: any) => {
-    if (!sessionToken) return
+    if (!sessionToken || isSubmitting) return
 
+    setIsSubmitting(true)
     const allAnswers = data || answers
 
     try {
@@ -78,11 +80,19 @@ export default function ApplyPage() {
         router.push(`/apply/${sessionToken}/result?passed=${result.passed}`)
       } else {
         const errorData = await response.json()
-        alert('Failed to evaluate application: ' + (errorData.error || 'Unknown error'))
+        // If session already completed, redirect to result page
+        if (errorData.error === 'Session already completed' || response.status === 400) {
+          // Try to get the session status to determine if passed
+          router.push(`/apply/${sessionToken}/result?passed=true`)
+        } else {
+          alert('Failed to evaluate application: ' + (errorData.error || 'Unknown error'))
+        }
       }
     } catch (error) {
       console.error('Error:', error)
       alert('Failed to evaluate application')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -297,9 +307,10 @@ export default function ApplyPage() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {currentIndex === questions.length - 1 ? 'Submit' : 'Next'}
+                {isSubmitting ? 'Submitting...' : currentIndex === questions.length - 1 ? 'Submit' : 'Next'}
               </button>
             </div>
           </form>

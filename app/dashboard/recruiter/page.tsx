@@ -40,10 +40,7 @@ export default function RecruiterDashboardPage() {
     setLoading(true)
     setJobs(null)
     try {
-      const res = await fetch(
-        `/api/dashboard/recruiter?email=${encodeURIComponent(email)}`,
-        { cache: 'no-store' }
-      )
+      const res = await fetch('/api/dashboard/recruiter', { cache: 'no-store' })
       const data = await res.json()
       setJobs(data.jobs ?? [])
     } catch (e) {
@@ -69,7 +66,6 @@ export default function RecruiterDashboardPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
           applicationId,
           status: newStatus,
         }),

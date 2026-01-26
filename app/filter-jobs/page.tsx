@@ -80,16 +80,15 @@ export default function FilterJobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-6">
           <Link href="/jobs" className="text-indigo-600 hover:underline mb-4 inline-block">
             ← Back to jobs
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Eligible Jobs</h1>
           <p className="text-gray-600 mt-2">
             Answer a few questions. We&apos;ll show only roles that match your profile.
-            Answer all questions for the best results.
           </p>
         </div>
 
@@ -106,135 +105,152 @@ export default function FilterJobsPage() {
             </Link>
           </div>
         ) : (
-          <>
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="bg-white p-8 rounded-xl shadow space-y-6"
-            >
-              {questions.map((q) => (
-                <div key={q.key}>
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    {q.label}
-                  </label>
-                  {q.type === 'BOOLEAN' && (
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2">
-                        <input type="radio" value="true" {...register(q.key)} />
-                        Yes
+          <div className="flex gap-6">
+            {/* Left Sidebar - Filters */}
+            <div className="w-80 flex-shrink-0">
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="bg-white p-6 rounded-xl shadow sticky top-4"
+              >
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter Criteria</h2>
+                <div className="space-y-5 max-h-[calc(100vh-12rem)] overflow-y-auto">
+                  {questions.map((q) => (
+                    <div key={q.key} className="border-b border-gray-100 pb-4 last:border-0">
+                      <label className="block text-sm font-medium text-gray-800 mb-2">
+                        {q.label}
                       </label>
-                      <label className="flex items-center gap-2">
-                        <input type="radio" value="false" {...register(q.key)} />
-                        No
-                      </label>
+                      {q.type === 'BOOLEAN' && (
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input type="radio" value="true" {...register(q.key)} className="w-4 h-4" />
+                            Yes
+                          </label>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input type="radio" value="false" {...register(q.key)} className="w-4 h-4" />
+                            No
+                          </label>
+                        </div>
+                      )}
+                      {q.type === 'SINGLE_SELECT' && (
+                        <select
+                          {...register(q.key)}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="">Select</option>
+                          {q.options?.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {q.type === 'MULTI_SELECT' && (
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {q.options?.map((o) => (
+                            <label key={o} className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={(multiValues[q.key] ?? []).includes(o)}
+                                onChange={(e) => {
+                                  const prev = multiValues[q.key] ?? []
+                                  const next = e.target.checked
+                                    ? [...prev.filter((x) => x !== o), o]
+                                    : prev.filter((x) => x !== o)
+                                  setMultiValues((m) => ({ ...m, [q.key]: next }))
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-gray-700">{o}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      {q.type === 'NUMBER' && (
+                        <input
+                          type="number"
+                          {...register(q.key, { valueAsNumber: true })}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                        />
+                      )}
+                      {q.type === 'COUNTRY' && (
+                        <input
+                          type="text"
+                          {...register(q.key)}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                          placeholder="Country"
+                        />
+                      )}
                     </div>
-                  )}
-                  {q.type === 'SINGLE_SELECT' && (
-                    <select
-                      {...register(q.key)}
-                      className="w-full border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-indigo-500 outline-none"
-                    >
-                      <option value="">Select</option>
-                      {q.options?.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {q.type === 'MULTI_SELECT' && (
-                    <div className="space-y-2">
-                      {q.options?.map((o) => (
-                        <label key={o} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={(multiValues[q.key] ?? []).includes(o)}
-                            onChange={(e) => {
-                              const prev = multiValues[q.key] ?? []
-                              const next = e.target.checked
-                                ? [...prev.filter((x) => x !== o), o]
-                                : prev.filter((x) => x !== o)
-                              setMultiValues((m) => ({ ...m, [q.key]: next }))
-                            }}
-                          />
-                          {o}
-                        </label>
+                  ))}
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full mt-6 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition"
+                >
+                  {submitting ? 'Finding jobs…' : 'Find my jobs'}
+                </button>
+              </form>
+            </div>
+
+            {/* Right Content - Results */}
+            <div className="flex-1 min-w-0">
+              {jobs !== null && (
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">
+                    {jobs.length === 0
+                      ? 'No matching jobs'
+                      : `${jobs.length} job${jobs.length === 1 ? '' : 's'} match`}
+                  </h2>
+                  {jobs.length === 0 ? (
+                    <div className="bg-white p-6 rounded-xl shadow">
+                      <p className="text-gray-600">
+                        No roles match your answers right now. Try browsing all jobs or
+                        tweaking your answers.
+                      </p>
+                      <Link
+                        href="/jobs"
+                        className="inline-block mt-4 text-indigo-600 hover:underline"
+                      >
+                        Browse all jobs
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {jobs.map((job) => (
+                        <Link
+                          key={job.id}
+                          href={`/jobs/${job.slug}`}
+                          className="block bg-white p-6 rounded-xl shadow hover:shadow-lg transition"
+                        >
+                          <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+                          {job.companyName && (
+                            <p className="text-gray-600 mt-1">{job.companyName}</p>
+                          )}
+                          <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-2">
+                            <span>{job.locationText}</span>
+                            <span>•</span>
+                            <span>{job.remotePolicy}</span>
+                            <span>•</span>
+                            <span>{job.contractType}</span>
+                            <span>•</span>
+                            <span>{job.roleCategory}</span>
+                          </div>
+                        </Link>
                       ))}
                     </div>
-                  )}
-                  {q.type === 'NUMBER' && (
-                    <input
-                      type="number"
-                      {...register(q.key, { valueAsNumber: true })}
-                      className="w-full border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-indigo-500 outline-none"
-                    />
-                  )}
-                  {q.type === 'COUNTRY' && (
-                    <input
-                      type="text"
-                      {...register(q.key)}
-                      className="w-full border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-indigo-500 outline-none"
-                      placeholder="Country"
-                    />
                   )}
                 </div>
-              ))}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
-              >
-                {submitting ? 'Finding jobs…' : 'Find my jobs'}
-              </button>
-            </form>
-
-            {jobs !== null && (
-              <div className="mt-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                  {jobs.length === 0
-                    ? 'No matching jobs'
-                    : `${jobs.length} job${jobs.length === 1 ? '' : 's'} match`}
-                </h2>
-                {jobs.length === 0 ? (
-                  <div className="bg-white p-6 rounded-xl shadow">
-                    <p className="text-gray-600">
-                      No roles match your answers right now. Try browsing all jobs or
-                      tweaking your answers.
-                    </p>
-                    <Link
-                      href="/jobs"
-                      className="inline-block mt-4 text-indigo-600 hover:underline"
-                    >
-                      Browse all jobs
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {jobs.map((job) => (
-                      <Link
-                        key={job.id}
-                        href={`/jobs/${job.slug}`}
-                        className="block bg-white p-6 rounded-xl shadow hover:shadow-lg transition"
-                      >
-                        <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                        {job.companyName && (
-                          <p className="text-gray-600 mt-1">{job.companyName}</p>
-                        )}
-                        <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-2">
-                          <span>{job.locationText}</span>
-                          <span>•</span>
-                          <span>{job.remotePolicy}</span>
-                          <span>•</span>
-                          <span>{job.contractType}</span>
-                          <span>•</span>
-                          <span>{job.roleCategory}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </>
+              )}
+              {jobs === null && (
+                <div className="bg-white p-12 rounded-xl shadow text-center">
+                  <p className="text-gray-500">
+                    Fill out the filter criteria on the left and click &quot;Find my jobs&quot; to see matching roles.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

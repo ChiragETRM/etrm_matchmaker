@@ -108,9 +108,16 @@ export async function POST(
       : {}
 
     // Upload resume (metadata for dashboard) and prepare email attachment
+    // Read file once - File objects can only be read once
+    const resumeArrayBuffer = await resume.arrayBuffer()
+    const resumeBuffer = Buffer.from(resumeArrayBuffer)
+    
+    // Create a new File object from the buffer for upload
+    const resumeFileForUpload = new File([resumeBuffer], resume.name, { type: resume.type })
+    
     let fileId: string | null = null
     try {
-      const uploadResult = await uploadFile(resume, 'resumes')
+      const uploadResult = await uploadFile(resumeFileForUpload, 'resumes')
       fileId = uploadResult.fileId
     } catch (error) {
       console.error('File upload error:', error)
@@ -119,7 +126,6 @@ export async function POST(
         { status: 500 }
       )
     }
-    const resumeBuffer = Buffer.from(await resume.arrayBuffer())
     const resumeContentType =
       resume.type === 'application/pdf'
         ? 'application/pdf'

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 interface AppItem {
@@ -24,19 +25,18 @@ interface AppItem {
 }
 
 export default function CandidateDashboardPage() {
-  const [email, setEmail] = useState('')
+  const { data: session, status } = useSession()
   const [loading, setLoading] = useState(false)
   const [applications, setApplications] = useState<AppItem[] | null>(null)
 
+  const email = session?.user?.email || ''
+
   const fetchData = async () => {
-    if (!email.trim()) return
+    if (!email) return
     setLoading(true)
     setApplications(null)
     try {
-      const res = await fetch(
-        `/api/dashboard/candidate?email=${encodeURIComponent(email.trim())}`,
-        { cache: 'no-store' }
-      )
+      const res = await fetch('/api/dashboard/candidate', { cache: 'no-store' })
       const data = await res.json()
       setApplications(data.applications ?? [])
     } catch (e) {
@@ -44,6 +44,23 @@ export default function CandidateDashboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Auto-fetch when session is loaded
+  useEffect(() => {
+    if (status === 'authenticated' && email) {
+      fetchData()
+    }
+  }, [status, email])
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        <div className="max-w-3xl mx-auto text-center text-gray-500">
+          Loading...
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -54,28 +71,31 @@ export default function CandidateDashboardPage() {
         </Link>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Candidate dashboard</h1>
         <p className="text-gray-600 mb-8">
-          Enter the email you used for applications to see your activity.
+          View your applications and activity. Showing applications for{' '}
+          <strong>{email}</strong>.
         </p>
 
         <div className="bg-white rounded-xl shadow p-6 mb-8">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Your email
-          </label>
-          <div className="flex gap-3">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchData()}
-              placeholder="you@example.com"
-              className="flex-1 border-2 border-gray-200 rounded-lg px-4 py-2 focus:border-indigo-500 outline-none"
-            />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {session?.user?.image && (
+                <img
+                  src={session.user.image}
+                  alt=""
+                  className="w-10 h-10 rounded-full"
+                />
+              )}
+              <div>
+                <p className="font-medium text-gray-900">{session?.user?.name}</p>
+                <p className="text-sm text-gray-500">{email}</p>
+              </div>
+            </div>
             <button
               onClick={fetchData}
-              disabled={loading || !email.trim()}
+              disabled={loading}
               className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
             >
-              {loading ? 'Loading…' : 'View'}
+              {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
         </div>

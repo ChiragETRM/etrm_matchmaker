@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * GET ?email=...
- * Returns jobs posted by this recruiter (recruiterEmailTo) with applications.
+ * GET
+ * Returns jobs posted by the authenticated user (recruiterEmailTo) with applications.
  */
 export async function GET(request: NextRequest) {
   try {
-    const email = request.nextUrl.searchParams.get('email')?.trim()
-    if (!email) {
+    const session = await auth()
+    if (!session?.user?.email) {
       return NextResponse.json(
-        { error: 'email is required' },
-        { status: 400 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       )
     }
+
+    const email = session.user.email
 
     const jobs = await prisma.job.findMany({
       where: { recruiterEmailTo: email },

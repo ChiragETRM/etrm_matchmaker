@@ -37,11 +37,26 @@ export async function POST(
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     }
 
+    // If session is already completed, return the existing result instead of error
     if (session.status !== 'IN_PROGRESS') {
-      return NextResponse.json(
-        { error: 'Session already completed' },
-        { status: 400 }
+      const existingAnswers = session.answersJson ? JSON.parse(session.answersJson) : {}
+      const gateRules = session.job.questionnaire?.gateRules || []
+      
+      // Re-evaluate to get failed rules (in case they're needed)
+      const evaluation = evaluateGates(
+        gateRules.map((r) => ({
+          questionKey: r.questionKey,
+          operator: r.operator as any,
+          valueJson: r.valueJson,
+        })),
+        existingAnswers
       )
+
+      return NextResponse.json({
+        passed: session.status === 'PASSED',
+        status: session.status,
+        failedRules: evaluation.failedRules,
+      })
     }
 
     const now = new Date()

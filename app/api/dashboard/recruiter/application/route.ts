@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { z } from 'zod'
 
 const bodySchema = z.object({
-  email: z.string().email(),
   applicationId: z.string(),
   status: z.enum(['PENDING', 'SHORTLISTED', 'DISCARDED']),
 })
@@ -11,13 +11,22 @@ const bodySchema = z.object({
 export const dynamic = 'force-dynamic'
 
 /**
- * PATCH { email, applicationId, status }
- * Updates recruiterStatus for an application. Verifies job.recruiterEmailTo === email.
+ * PATCH { applicationId, status }
+ * Updates recruiterStatus for an application. Verifies job.recruiterEmailTo matches authenticated user.
  */
 export async function PATCH(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const email = session.user.email
     const body = await request.json()
-    const { email, applicationId, status } = bodySchema.parse(body)
+    const { applicationId, status } = bodySchema.parse(body)
 
     const app = await prisma.application.findUnique({
       where: { id: applicationId },

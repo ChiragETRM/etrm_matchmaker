@@ -6,7 +6,7 @@ export default auth((req: any) => {
   const { pathname } = req.nextUrl
 
   // Protected routes that require authentication
-  const protectedPaths = ['/dashboard/recruiter', '/post-job']
+  const protectedPaths = ['/dashboard/candidate', '/dashboard/recruiter', '/post-job']
 
   const isProtected = protectedPaths.some((path) => pathname.startsWith(path))
 
@@ -20,5 +20,5 @@ export default auth((req: any) => {
 })
 
 export const config = {
-  matcher: ['/dashboard/recruiter/:path*', '/post-job/:path*'],
+  matcher: ['/dashboard/:path*', '/post-job/:path*'],
 }
