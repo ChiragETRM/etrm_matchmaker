@@ -27,6 +27,7 @@ export function renderSimpleMarkdown(text: string): string {
   const lines = escaped.split('\n')
   const processedLines: string[] = []
   let inList = false
+  let lastWasEmpty = false
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim()
@@ -39,10 +40,11 @@ export function renderSimpleMarkdown(text: string): string {
 
     if (bulletMatch) {
       if (!inList) {
-        processedLines.push('<ul class="list-disc list-inside space-y-1 my-2">')
+        processedLines.push('<ul class="list-disc list-inside space-y-0.5 my-1">')
         inList = true
       }
-      processedLines.push(`<li>${bulletMatch[1]}</li>`)
+      processedLines.push(`<li class="text-sm">${bulletMatch[1]}</li>`)
+      lastWasEmpty = false
     } else {
       // Close list if we were in one
       if (inList) {
@@ -50,20 +52,22 @@ export function renderSimpleMarkdown(text: string): string {
         inList = false
       }
 
-      // Empty line = paragraph break
+      // Empty line - skip consecutive empty lines
       if (line === '') {
-        processedLines.push('<br />')
-      } else {
-        // Check if line looks like a header (ends with colon or all caps section)
-        const isHeader = /^[A-Z][A-Za-z\s]+:$/.test(line) ||
-                        /^(Summary|Responsibilities|Requirements|Skills|Qualifications|Nice to Have|About|Overview|Description|Experience|Benefits|What you|Who you|Your role|The role|Key|Required|Preferred|Duties|Tasks):?$/i.test(line.replace(/<[^>]*>/g, ''))
-
-        if (isHeader) {
-          processedLines.push(`<p class="font-semibold mt-4 mb-2">${line}</p>`)
-        } else {
-          processedLines.push(`<p class="mb-2">${line}</p>`)
-        }
+        lastWasEmpty = true
+        continue
       }
+
+      // Check if line looks like a header (ends with colon or common section names)
+      const isHeader = /^[A-Z][A-Za-z\s]+:$/.test(line) ||
+                      /^(Summary|Responsibilities|Requirements|Skills|Qualifications|Nice to Have|About|Overview|Description|Experience|Benefits|What you|Who you|Your role|The role|Key|Required|Preferred|Duties|Tasks):?$/i.test(line.replace(/<[^>]*>/g, ''))
+
+      if (isHeader) {
+        processedLines.push(`<p class="font-semibold mt-3 mb-1">${line}</p>`)
+      } else {
+        processedLines.push(`<p class="mb-1">${line}</p>`)
+      }
+      lastWasEmpty = false
     }
   }
 
@@ -72,5 +76,5 @@ export function renderSimpleMarkdown(text: string): string {
     processedLines.push('</ul>')
   }
 
-  return processedLines.join('\n')
+  return processedLines.join('')
 }
