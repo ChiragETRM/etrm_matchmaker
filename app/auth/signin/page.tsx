@@ -2,52 +2,33 @@
 
 import { useEffect, useState } from 'react'
 import { signIn, useSession } from 'next-auth/react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 
 function SignInContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const { data: session, status } = useSession()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const error = searchParams.get('error')
-  const [redirecting, setRedirecting] = useState(false)
-  const [sessionError, setSessionError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (status === 'authenticated' && session && !redirecting) {
-      setRedirecting(true)
-
-      // Verify session server-side before redirecting
-      fetch('/api/auth/session')
-        .then(res => res.json())
-        .then(serverSession => {
-          if (!serverSession?.user) {
-            // Server doesn't see the session - likely a cookie issue
-            setSessionError('Session verification failed. Please sign in again.')
-            setRedirecting(false)
-            return
-          }
-
-          // Session verified - safe to redirect
-          let decodedUrl = callbackUrl
-          try {
-            decodedUrl = decodeURIComponent(callbackUrl)
-          } catch {
-            decodedUrl = callbackUrl
-          }
-          if (!decodedUrl.startsWith('/')) {
-            decodedUrl = '/' + decodedUrl
-          }
-
-          window.location.href = decodedUrl
-        })
-        .catch(err => {
-          console.error('Session verification error:', err)
-          setSessionError('Failed to verify session. Please try again.')
-          setRedirecting(false)
-        })
+    if (status === 'authenticated' && session) {
+      // Decode the callbackUrl in case it's URL-encoded
+      let decodedUrl = callbackUrl
+      try {
+        decodedUrl = decodeURIComponent(callbackUrl)
+      } catch {
+        decodedUrl = callbackUrl
+      }
+      // Ensure it starts with /
+      if (!decodedUrl.startsWith('/')) {
+        decodedUrl = '/' + decodedUrl
+      }
+      // Use router.push for client-side navigation
+      router.push(decodedUrl)
     }
-  }, [status, session, callbackUrl, redirecting])
+  }, [status, session, callbackUrl, router])
 
   if (status === 'loading') {
     return (
@@ -57,27 +38,7 @@ function SignInContent() {
     )
   }
 
-  if (sessionError) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-600 mb-4">Session Error</div>
-          <p className="text-gray-600 mb-4">{sessionError}</p>
-          <button
-            onClick={() => {
-              setSessionError(null)
-              signIn('google', { callbackUrl })
-            }}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-          >
-            Sign in with Google
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (status === 'authenticated' || redirecting) {
+  if (status === 'authenticated') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

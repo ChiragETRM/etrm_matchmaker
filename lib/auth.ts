@@ -71,6 +71,24 @@ try {
         }
         return session
       },
+      authorized({ auth, request }: { auth: any; request: any }) {
+        // This callback is used by the middleware
+        // Return true to allow access, false to redirect to signin
+        const isLoggedIn = !!auth?.user
+        const { pathname } = request.nextUrl
+
+        // Protected routes
+        const protectedPaths = ['/dashboard', '/post-job']
+        const isProtected = protectedPaths.some((path) =>
+          pathname === path || pathname.startsWith(path + '/')
+        )
+
+        if (isProtected) {
+          return isLoggedIn // Will redirect to signIn page if false
+        }
+
+        return true // Allow all other routes
+      },
     },
     trustHost: true,
   }
