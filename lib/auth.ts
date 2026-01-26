@@ -52,7 +52,7 @@ try {
       signIn: '/auth/signin',
     },
     callbacks: {
-      session({ session, user }) {
+      session({ session, user }: { session: any; user: any }) {
         // Add user id to session for convenience
         if (session.user) {
           session.user.id = user.id
