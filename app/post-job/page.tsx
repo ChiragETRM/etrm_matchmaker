@@ -108,6 +108,13 @@ export default function PostJobPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [budgetValue, setBudgetValue] = useState(150)
 
+  // Redirect to signin if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin?callbackUrl=/post-job')
+    }
+  }, [status, router])
+
   const { register, handleSubmit, control, watch, setValue } = useForm({
     defaultValues: {
       title: '',
@@ -308,6 +315,15 @@ export default function PostJobPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Show loading while checking auth
+  if (status === 'loading' || status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    )
   }
 
   return (

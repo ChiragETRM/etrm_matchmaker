@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 interface AppItem {
@@ -25,8 +26,16 @@ interface AppItem {
 }
 
 export default function CandidateDashboardPage() {
+  const router = useRouter()
   const { data: session, status } = useSession()
   const [loading, setLoading] = useState(false)
+
+  // Redirect to signin if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin?callbackUrl=/dashboard/candidate')
+    }
+  }, [status, router])
   const [applications, setApplications] = useState<AppItem[] | null>(null)
   const [uploading, setUploading] = useState(false)
   const [updating, setUpdating] = useState(false)
@@ -163,7 +172,7 @@ export default function CandidateDashboardPage() {
     await updateProfile()
   }
 
-  if (status === 'loading') {
+  if (status === 'loading' || status === 'unauthenticated') {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4">
         <div className="max-w-3xl mx-auto text-center text-gray-500">
