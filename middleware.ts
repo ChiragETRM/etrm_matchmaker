@@ -6,9 +6,12 @@ export default auth((req: any) => {
   const { pathname } = req.nextUrl
 
   // Protected routes that require authentication
-  const protectedPaths = ['/dashboard/candidate', '/dashboard/recruiter', '/post-job']
+  // Include the main /dashboard page as well as subpaths
+  const protectedPaths = ['/dashboard', '/post-job']
 
-  const isProtected = protectedPaths.some((path) => pathname.startsWith(path))
+  const isProtected = protectedPaths.some((path) =>
+    pathname === path || pathname.startsWith(path + '/')
+  )
 
   if (isProtected && !isLoggedIn) {
     const signInUrl = new URL('/auth/signin', req.url)
@@ -20,5 +23,6 @@ export default auth((req: any) => {
 })
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/post-job/:path*'],
+  // Match both exact /dashboard and all subpaths
+  matcher: ['/dashboard', '/dashboard/:path*', '/post-job', '/post-job/:path*'],
 }

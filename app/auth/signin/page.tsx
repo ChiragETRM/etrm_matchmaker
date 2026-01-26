@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { signIn, useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
@@ -11,9 +11,14 @@ function SignInContent() {
   const { data: session, status } = useSession()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const error = searchParams.get('error')
+  const [redirecting, setRedirecting] = useState(false)
+  const redirectAttempted = useRef(false)
 
   useEffect(() => {
-    if (status === 'authenticated' && session) {
+    if (status === 'authenticated' && session && !redirectAttempted.current) {
+      redirectAttempted.current = true
+      setRedirecting(true)
+
       // Decode the callbackUrl in case it's URL-encoded
       let decodedUrl = callbackUrl
       try {
@@ -26,10 +31,12 @@ function SignInContent() {
       if (!decodedUrl.startsWith('/')) {
         decodedUrl = '/' + decodedUrl
       }
-      // Use router.push for client-side navigation to avoid full page reload
-      router.push(decodedUrl)
+
+      // Use window.location for more reliable redirect
+      // This avoids issues with Next.js router in certain edge cases
+      window.location.href = decodedUrl
     }
-  }, [status, session, callbackUrl, router])
+  }, [status, session, callbackUrl])
 
   if (status === 'loading') {
     return (
@@ -39,10 +46,13 @@ function SignInContent() {
     )
   }
 
-  if (status === 'authenticated') {
+  if (status === 'authenticated' || redirecting) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Redirecting...</div>
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">Redirecting...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+        </div>
       </div>
     )
   }
