@@ -320,7 +320,7 @@ export default function PostJobPage() {
           <h1 className="text-4xl font-extrabold mb-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Post a Job
           </h1>
-          <p className="text-gray-600">Create your ETRM job posting in minutes</p>
+          <p className="text-gray-600">Find the right ETRM candidate, fast!</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
