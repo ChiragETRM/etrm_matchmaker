@@ -247,12 +247,11 @@ export default function CandidateDashboardPage() {
               </label>
               {currentResumeFileId && (
                 <a
-                  href={`/api/files/${currentResumeFileId}`}
-                  target="_blank"
-                  rel="noreferrer"
+                  href={`/api/files/${currentResumeFileId}/download`}
+                  download
                   className="text-indigo-600 hover:underline text-sm"
                 >
-                  View current CV →
+                  Download current CV →
                 </a>
               )}
               {uploadSuccess && (
