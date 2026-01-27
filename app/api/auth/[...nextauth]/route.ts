@@ -135,6 +135,30 @@ async function handleRequest(
         url.searchParams.set('details', encodeURIComponent('Authentication error. Please clear your browser cookies and try again.'))
         return NextResponse.redirect(url)
       }
+      
+      // Handle state cookie parsing errors
+      // This happens when the state cookie is corrupted, expired, or can't be decrypted
+      if (
+        errorMessage.includes('state') && 
+        (errorMessage.includes('could not be parsed') ||
+         errorMessage.includes('invalidcheck') ||
+         errorMessage.includes('parsing'))
+      ) {
+        console.error('[NextAuth] State cookie parsing error detected:', {
+          error: error.message,
+          url: req.url,
+          hasCookies: req.headers.get('cookie') ? 'yes' : 'no',
+          // Check if AUTH_SECRET is set (without logging the value)
+          hasAuthSecret: !!process.env.AUTH_SECRET,
+        })
+        
+        // Redirect to sign-in with error message
+        // The user should clear cookies and try again
+        const url = new URL('/auth/signin', req.url)
+        url.searchParams.set('error', 'StateError')
+        url.searchParams.set('details', encodeURIComponent('Session state error. Please clear your browser cookies and try again.'))
+        return NextResponse.redirect(url)
+      }
     }
     
     // For other errors, redirect to sign-in with generic error
