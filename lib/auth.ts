@@ -23,7 +23,7 @@ if (!googleClientId || !googleClientSecret) {
   throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are required')
 }
 
-// Determine AUTH_URL - NextAuth v5 requires this for proper cookie/CSRF handling
+// Determine AUTH_URL - NextAuth v5 uses this via environment variables automatically
 // Priority: AUTH_URL > NEXTAUTH_URL > NEXT_PUBLIC_APP_URL > auto-detect
 function getAuthUrl(): string {
   // Explicit AUTH_URL takes highest priority
@@ -50,11 +50,6 @@ function getAuthUrl(): string {
     return `https://${process.env.VERCEL_URL}`
   }
   
-  // Vercel preview deployments
-  if (process.env.VERCEL && process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
-  }
-  
   // Default for local development
   return 'http://localhost:3000'
 }
@@ -75,8 +70,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: authSecret,
   // Explicitly set the base URL for NextAuth
   basePath: '/api/auth',
-  // Set the full URL for proper cookie domain handling
-  url: authUrl,
+  // Note: NextAuth v5 automatically detects URL from AUTH_URL, NEXTAUTH_URL, or VERCEL_URL env vars
+  // trustHost: true enables automatic URL detection from request headers
   providers: [
     Google({
       clientId: googleClientId,
