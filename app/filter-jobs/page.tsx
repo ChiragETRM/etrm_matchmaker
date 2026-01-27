@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
+import { useSession } from 'next-auth/react'
 
 interface Question {
   key: string
@@ -34,14 +35,24 @@ interface Job {
   expiresAt: string
 }
 
+interface GateAnswer {
+  questionKey: string
+  answer: any
+  updatedAt: string
+}
+
 export default function FilterJobsPage() {
+  const { data: session, status: sessionStatus } = useSession()
   const [questions, setQuestions] = useState<Question[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [jobs, setJobs] = useState<Job[] | null>(null)
   const [multiValues, setMultiValues] = useState<Record<string, string[]>>({})
+  const [existingAnswers, setExistingAnswers] = useState<Record<string, any>>({})
+  const [hasAutoFiltered, setHasAutoFiltered] = useState(false)
   const { register, handleSubmit, watch, setValue } = useForm()
 
+  // Fetch questions
   useEffect(() => {
     fetch('/api/public/filter-questions', { cache: 'no-store' })
       .then((r) => r.json())
@@ -52,9 +63,58 @@ export default function FilterJobsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const onSubmit = async (data: Record<string, unknown>) => {
-    const answers = { ...data, ...multiValues }
-    setSubmitting(true)
+  // Fetch existing gate answers if signed in
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && session?.user?.email) {
+      fetch('/api/dashboard/candidate', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((d) => {
+          const answers: Record<string, any> = {}
+          const multiSelectAnswers: Record<string, string[]> = {}
+          
+          if (d.gateAnswers && Array.isArray(d.gateAnswers)) {
+            d.gateAnswers.forEach((ga: GateAnswer) => {
+              if (Array.isArray(ga.answer)) {
+                multiSelectAnswers[ga.questionKey] = ga.answer
+              } else {
+                answers[ga.questionKey] = ga.answer
+              }
+            })
+          }
+          
+          setExistingAnswers(answers)
+          setMultiValues(multiSelectAnswers)
+          
+          // Pre-fill form values
+          Object.entries(answers).forEach(([key, value]) => {
+            setValue(key, value)
+          })
+        })
+        .catch(console.error)
+    }
+  }, [sessionStatus, session?.user?.email, setValue])
+
+  // Auto-filter jobs when signed in and we have answers
+  useEffect(() => {
+    if (
+      !loading &&
+      questions.length > 0 &&
+      sessionStatus === 'authenticated' &&
+      !hasAutoFiltered &&
+      (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0)
+    ) {
+      const allAnswers = { ...existingAnswers, ...multiValues }
+      if (Object.keys(allAnswers).length > 0) {
+        filterJobs(allAnswers, true)
+        setHasAutoFiltered(true)
+      }
+    }
+  }, [loading, questions, sessionStatus, existingAnswers, multiValues, hasAutoFiltered, filterJobs])
+
+  const filterJobs = useCallback(async (answers: Record<string, unknown>, isAuto = false) => {
+    if (!isAuto) {
+      setSubmitting(true)
+    }
     setJobs(null)
     try {
       const res = await fetch('/api/public/filter-jobs', {
@@ -67,8 +127,33 @@ export default function FilterJobsPage() {
     } catch (e) {
       console.error(e)
     } finally {
-      setSubmitting(false)
+      if (!isAuto) {
+        setSubmitting(false)
+      }
     }
+  }, [])
+
+  const onSubmit = async (data: Record<string, unknown>) => {
+    // Merge existing answers with new form data
+    const answers = { ...existingAnswers, ...data, ...multiValues }
+    
+    // Save answers if signed in
+    if (sessionStatus === 'authenticated' && session?.user?.email) {
+      try {
+        await fetch('/api/dashboard/candidate/gate-answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers }),
+        })
+        // Update local state with saved answers
+        setExistingAnswers({ ...existingAnswers, ...data })
+      } catch (e) {
+        console.error('Failed to save answers:', e)
+        // Continue even if save fails
+      }
+    }
+    
+    await filterJobs(answers, false)
   }
 
   if (loading) {
@@ -88,7 +173,9 @@ export default function FilterJobsPage() {
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Eligible Jobs</h1>
           <p className="text-gray-600 mt-2">
-            Answer a few questions. We&apos;ll show only roles that match your profile.
+            {sessionStatus === 'authenticated'
+              ? 'We\'ll automatically show jobs that match your profile. Answer any missing questions below.'
+              : 'Answer a few questions. We\'ll show only roles that match your profile.'}
           </p>
         </div>
 
@@ -113,8 +200,54 @@ export default function FilterJobsPage() {
                 className="bg-white p-6 rounded-xl shadow sticky top-4"
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter Criteria</h2>
+                {sessionStatus === 'authenticated' && (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0) && (
+                  <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <p className="text-sm text-indigo-800 mb-2">
+                      {hasAutoFiltered ? '✓ Jobs filtered automatically based on your saved profile' : 'Your saved answers will be used to filter jobs'}
+                    </p>
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-indigo-700 hover:text-indigo-900 font-medium">
+                        View/Edit saved answers ({Object.keys(existingAnswers).length + Object.keys(multiValues).length})
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        {questions
+                          .filter((q) => q.key in existingAnswers || q.key in multiValues)
+                          .map((q) => {
+                            const answer = existingAnswers[q.key] ?? multiValues[q.key]
+                            return (
+                              <div key={q.key} className="text-xs">
+                                <span className="font-medium text-gray-700">{q.label}:</span>{' '}
+                                <span className="text-gray-600">
+                                  {Array.isArray(answer) ? answer.join(', ') : String(answer)}
+                                </span>
+                              </div>
+                            )
+                          })}
+                      </div>
+                    </details>
+                  </div>
+                )}
                 <div className="space-y-5 max-h-[calc(100vh-12rem)] overflow-y-auto">
-                  {questions.map((q) => (
+                  {(() => {
+                    const missingQuestions = questions.filter((q) => {
+                      // If signed in, only show questions without answers
+                      if (sessionStatus === 'authenticated') {
+                        return !(q.key in existingAnswers) && !(q.key in multiValues)
+                      }
+                      // If not signed in, show all questions
+                      return true
+                    })
+                    
+                    if (missingQuestions.length === 0 && sessionStatus === 'authenticated') {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          <p className="text-sm">All questions answered! Your saved profile is being used to filter jobs.</p>
+                          <p className="text-xs mt-2">Click &quot;Find my jobs&quot; to refresh results.</p>
+                        </div>
+                      )
+                    }
+                    
+                    return missingQuestions.map((q) => (
                     <div key={q.key} className="border-b border-gray-100 pb-4 last:border-0">
                       <label className="block text-sm font-medium text-gray-800 mb-2">
                         {q.label}
@@ -181,14 +314,15 @@ export default function FilterJobsPage() {
                         />
                       )}
                     </div>
-                  ))}
+                    ))
+                  })()}
                 </div>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="w-full mt-6 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition"
                 >
-                  {submitting ? 'Finding jobs…' : 'Find my jobs'}
+                  {submitting ? 'Finding jobs…' : sessionStatus === 'authenticated' && (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0) ? 'Update & Find jobs' : 'Find my jobs'}
                 </button>
               </form>
             </div>
