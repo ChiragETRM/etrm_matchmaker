@@ -221,3 +221,16 @@ model MailLog {
   @@index([applicationId])
   @@map("mail_logs")
 }
+
+model CandidateGateAnswer {
+  id            String   @id @default(cuid())
+  candidateEmail String  @map("candidate_email")
+  questionKey   String   @map("question_key")
+  answerJson    String   @map("answer_json") @db.Text // JSON value (can be string, number, boolean, or array)
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([candidateEmail, questionKey])
+  @@index([candidateEmail])
+  @@map("candidate_gate_answers")
+}

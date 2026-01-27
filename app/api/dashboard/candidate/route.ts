@@ -38,6 +38,12 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
+    // Fetch saved gate answers
+    const gateAnswers = await prisma.candidateGateAnswer.findMany({
+      where: { candidateEmail: email },
+      orderBy: { questionKey: 'asc' },
+    })
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
     const list = applications.map((a) => ({
@@ -64,7 +70,16 @@ export async function GET(request: NextRequest) {
         : null,
     }))
 
-    return NextResponse.json({ applications: list })
+    const gateAnswersList = gateAnswers.map((ga) => ({
+      questionKey: ga.questionKey,
+      answer: JSON.parse(ga.answerJson),
+      updatedAt: ga.updatedAt,
+    }))
+
+    return NextResponse.json({ 
+      applications: list,
+      gateAnswers: gateAnswersList,
+    })
   } catch (error) {
     console.error('Error fetching candidate dashboard:', error)
     return NextResponse.json(

@@ -25,6 +25,12 @@ interface AppItem {
   resumeUrl: string | null
 }
 
+interface GateAnswer {
+  questionKey: string
+  answer: any
+  updatedAt: string
+}
+
 export default function CandidateDashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -37,6 +43,7 @@ export default function CandidateDashboardPage() {
     }
   }, [status, router])
   const [applications, setApplications] = useState<AppItem[] | null>(null)
+  const [gateAnswers, setGateAnswers] = useState<GateAnswer[]>([])
   const [uploading, setUploading] = useState(false)
   const [updating, setUpdating] = useState(false)
   const [profileForm, setProfileForm] = useState({
@@ -58,6 +65,7 @@ export default function CandidateDashboardPage() {
       const res = await fetch('/api/dashboard/candidate', { cache: 'no-store' })
       const data = await res.json()
       setApplications(data.applications ?? [])
+      setGateAnswers(data.gateAnswers ?? [])
       // Get profile info from first application if available
       if (data.applications && data.applications.length > 0) {
         const firstApp = data.applications[0]
@@ -311,6 +319,40 @@ export default function CandidateDashboardPage() {
             </form>
           </div>
         </div>
+
+        {/* Saved Gate Answers Section */}
+        {gateAnswers.length > 0 && (
+          <div className="bg-white rounded-xl shadow p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Saved Application Information</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              The following information is saved and will be automatically used for 1-click apply. 
+              You can update it when applying to new jobs.
+            </p>
+            <div className="space-y-3">
+              {gateAnswers.map((ga) => (
+                <div key={ga.questionKey} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-medium text-gray-900 capitalize">
+                        {ga.questionKey.replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {Array.isArray(ga.answer)
+                          ? ga.answer.join(', ')
+                          : typeof ga.answer === 'boolean'
+                          ? ga.answer ? 'Yes' : 'No'
+                          : String(ga.answer)}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      Updated {new Date(ga.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {applications !== null && (
           <div className="space-y-4">
