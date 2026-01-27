@@ -17,10 +17,12 @@ export async function GET(
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
+    // Use the file's actual provider, fallback to env var
+    const fileProvider = fileObject.provider || process.env.STORAGE_PROVIDER || 'LOCAL'
     const provider = process.env.STORAGE_PROVIDER || 'LOCAL'
 
     // Handle Supabase Storage
-    if (provider === 'SUPABASE' && process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+    if ((fileProvider === 'SUPABASE' || provider === 'SUPABASE') && process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
       try {
         // Construct Supabase Storage public URL
         // Supabase Storage URLs follow pattern: {SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}
@@ -67,10 +69,13 @@ export async function GET(
     }
 
     // LOCAL provider - retrieve file data from database
-    if (provider === 'LOCAL') {
+    if (fileProvider === 'LOCAL' || provider === 'LOCAL') {
       if (!fileObject.data) {
         return NextResponse.json(
-          { error: 'File data not found in database' },
+          { 
+            error: 'File data not available. This file was uploaded before file storage was configured. Please upload a new file.',
+            code: 'FILE_DATA_MISSING'
+          },
           { status: 404 }
         )
       }
@@ -103,6 +108,18 @@ export async function GET(
     )
   } catch (error) {
     console.error('Error downloading file:', error)
+    
+    // Check if error is related to missing column
+    if (error instanceof Error && error.message.includes('data')) {
+      return NextResponse.json(
+        { 
+          error: 'Database schema needs to be updated. Please run the migration to add the data column.',
+          code: 'SCHEMA_OUTDATED'
+        },
+        { status: 500 }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Failed to download file' },
       { status: 500 }
