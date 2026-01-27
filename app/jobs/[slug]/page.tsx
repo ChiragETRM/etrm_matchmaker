@@ -238,12 +238,32 @@ export default function JobDetailPage() {
   const [showGateModal, setShowGateModal] = useState(false)
   const [gateQuestions, setGateQuestions] = useState<Question[]>([])
   const [prefillAnswers, setPrefillAnswers] = useState<Record<string, any>>({})
+  const [alreadyApplied, setAlreadyApplied] = useState(false)
 
   useEffect(() => {
     if (params.slug) {
       fetchJob(params.slug as string)
     }
   }, [params.slug])
+
+  useEffect(() => {
+    if (!job?.slug || status !== 'authenticated') return
+    const checkApplied = async () => {
+      try {
+        const res = await fetch(`/api/public/jobs/${job.slug}/applied`, {
+          cache: 'no-store',
+          headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setAlreadyApplied(!!data.applied)
+        }
+      } catch {
+        // ignore
+      }
+    }
+    checkApplied()
+  }, [job?.slug, status])
 
   const fetchJob = async (slug: string) => {
     setLoading(true)
@@ -312,7 +332,11 @@ export default function JobDetailPage() {
       }
 
       // Error case
-      alert(data.error || 'Failed to submit application. Please try again.')
+      if (data.error === 'You have already applied to this job.') {
+        setAlreadyApplied(true)
+      } else {
+        alert(data.error || 'Failed to submit application. Please try again.')
+      }
     } catch (error) {
       console.error('Error in one-click apply:', error)
       alert('An error occurred. Please try again.')
@@ -338,7 +362,12 @@ export default function JobDetailPage() {
         setShowGateModal(false)
         router.push(`/dashboard/candidate`)
       } else {
-        alert(data.error || 'Failed to submit application. Please try again.')
+        if (data.error === 'You have already applied to this job.') {
+          setShowGateModal(false)
+          setAlreadyApplied(true)
+        } else {
+          alert(data.error || 'Failed to submit application. Please try again.')
+        }
         setOneClickLoading(false)
       }
     } catch (error) {
@@ -434,7 +463,17 @@ export default function JobDetailPage() {
             </div>
           ) : null}
 
-          <div className="mb-6">
+          <div className="mb-6 relative overflow-hidden">
+            {alreadyApplied && (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+                aria-hidden="true"
+              >
+                <div className="w-[140%] -rotate-12 py-3 bg-purple-600 text-white text-center text-lg font-bold tracking-wide shadow-lg border-y-2 border-white/30">
+                  Already Applied
+                </div>
+              </div>
+            )}
             <h2 className="text-lg font-semibold mb-2">Job Description</h2>
             <div
               className="prose max-w-none text-gray-700"
@@ -448,10 +487,10 @@ export default function JobDetailPage() {
             <div className="flex gap-4">
               <button
                 onClick={handleOneClickApply}
-                disabled={oneClickLoading || status === 'loading'}
+                disabled={oneClickLoading || status === 'loading' || alreadyApplied}
                 className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
               >
-                {oneClickLoading ? 'Processing...' : '1 Click Apply'}
+                {oneClickLoading ? 'Processing...' : alreadyApplied ? 'Already Applied' : '1 Click Apply'}
               </button>
               <button
                 onClick={handleApply}
