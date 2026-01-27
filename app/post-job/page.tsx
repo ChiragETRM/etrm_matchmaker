@@ -815,7 +815,7 @@ export default function PostJobPage() {
                                 </label>
                               ))}
                             </div>
-                            <span className="ml-2">market</span>
+                            <span className="ml-2">market(s)</span>
                           </div>
                         )}
 
