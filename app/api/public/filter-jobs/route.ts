@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { evaluateGates } from '@/lib/gate-evaluator'
 
 export const dynamic = 'force-dynamic'
@@ -68,6 +69,27 @@ export async function POST(request: NextRequest) {
       return rest
     })
 
+    // Check if user has applied to any jobs
+    let appliedJobIds: Set<string> = new Set()
+    try {
+      const session = await auth()
+      if (session?.user?.email) {
+        const applications = await prisma.application.findMany({
+          where: {
+            candidateEmail: session.user.email,
+            jobId: { in: publicJobs.map((j) => j.id) },
+          },
+          select: {
+            jobId: true,
+          },
+        })
+        appliedJobIds = new Set(applications.map((a) => a.jobId))
+      }
+    } catch (error) {
+      // If auth fails, just continue without application status
+      console.error('Error checking applications:', error)
+    }
+
     return NextResponse.json({
       jobs: publicJobs.map((j) => ({
         id: j.id,
@@ -89,6 +111,7 @@ export async function POST(request: NextRequest) {
         budgetIsEstimate: j.budgetIsEstimate,
         createdAt: j.createdAt,
         expiresAt: j.expiresAt,
+        hasApplied: appliedJobIds.has(j.id),
       })),
     })
   } catch (error) {

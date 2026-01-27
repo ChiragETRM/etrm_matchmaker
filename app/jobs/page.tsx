@@ -27,6 +27,7 @@ interface JobListItem {
   budgetIsEstimate: boolean
   createdAt: string
   expiresAt: string
+  hasApplied?: boolean
 }
 
 interface JobDetail extends JobListItem {
@@ -599,20 +600,29 @@ function JobsContent() {
                               : ''
                           }`}
                         >
-                          <h2 className="font-medium text-gray-900 text-sm truncate">{job.title}</h2>
-                          {job.companyName && (
-                            <p className="text-xs text-gray-600 truncate mt-0.5">{job.companyName}</p>
-                          )}
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                            <span className="text-xs text-gray-500">{job.locationText}</span>
-                            <span className="text-gray-300">·</span>
-                            <span className="text-xs text-gray-500">{job.remotePolicy}</span>
-                            <span className="text-gray-300">·</span>
-                            <span className="text-xs text-gray-500">{job.contractType}</span>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h2 className="font-medium text-gray-900 text-sm truncate">{job.title}</h2>
+                              {job.companyName && (
+                                <p className="text-xs text-gray-600 truncate mt-0.5">{job.companyName}</p>
+                              )}
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                <span className="text-xs text-gray-500">{job.locationText}</span>
+                                <span className="text-gray-300">·</span>
+                                <span className="text-xs text-gray-500">{job.remotePolicy}</span>
+                                <span className="text-gray-300">·</span>
+                                <span className="text-xs text-gray-500">{job.contractType}</span>
+                              </div>
+                              <p className="text-xs text-indigo-600 mt-1">
+                                {daysLeftToApply(job.expiresAt)}
+                              </p>
+                            </div>
+                            {job.hasApplied && (
+                              <span className="flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Applied
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-indigo-600 mt-1">
-                            {daysLeftToApply(job.expiresAt)}
-                          </p>
                         </button>
                       </li>
                     ))}
@@ -628,10 +638,19 @@ function JobsContent() {
                   </div>
                 ) : selectedJob ? (
                   <div className="overflow-y-auto flex-1 p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-1">{selectedJob.title}</h1>
-                    {selectedJob.companyName && (
-                      <p className="text-lg text-gray-600 mb-3">{selectedJob.companyName}</p>
-                    )}
+                    <div className="flex items-start justify-between gap-4 mb-1">
+                      <div className="flex-1">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-1">{selectedJob.title}</h1>
+                        {selectedJob.companyName && (
+                          <p className="text-lg text-gray-600 mb-3">{selectedJob.companyName}</p>
+                        )}
+                      </div>
+                      {selectedJob.hasApplied && (
+                        <span className="flex-shrink-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                          Applied
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-3">
                       <span className="bg-gray-100 px-2 py-0.5 rounded">{selectedJob.locationText}</span>
                       <span className="bg-gray-100 px-2 py-0.5 rounded">{selectedJob.remotePolicy}</span>

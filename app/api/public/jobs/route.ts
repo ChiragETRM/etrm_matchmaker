@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import {
   getClientIp,
   getVercelCountry,
@@ -110,8 +111,32 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Check if user has applied to any jobs
+    let appliedJobIds: Set<string> = new Set()
+    try {
+      const session = await auth()
+      if (session?.user?.email) {
+        const applications = await prisma.application.findMany({
+          where: {
+            candidateEmail: session.user.email,
+            jobId: { in: filtered.map((j) => j.id) },
+          },
+          select: {
+            jobId: true,
+          },
+        })
+        appliedJobIds = new Set(applications.map((a) => a.jobId))
+      }
+    } catch (error) {
+      // If auth fails, just continue without application status
+      console.error('Error checking applications:', error)
+    }
+
     return NextResponse.json({
-      jobs: filtered,
+      jobs: filtered.map((job) => ({
+        ...job,
+        hasApplied: appliedJobIds.has(job.id),
+      })),
       ...(nearMe && (userCountryCode || userCountryName)
         ? { detectedCountry: userCountryName ?? userCountryCode }
         : {}),

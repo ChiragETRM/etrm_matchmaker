@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -36,10 +37,28 @@ export async function GET(
       return NextResponse.json({ error: 'Job has been archived' }, { status: 410 })
     }
 
+    // Check if user has applied to this job
+    let hasApplied = false
+    try {
+      const session = await auth()
+      if (session?.user?.email) {
+        const application = await prisma.application.findFirst({
+          where: {
+            candidateEmail: session.user.email,
+            jobId: job.id,
+          },
+        })
+        hasApplied = !!application
+      }
+    } catch (error) {
+      // If auth fails, just continue without application status
+      console.error('Error checking application:', error)
+    }
+
     // Return job without sensitive info
     const { recruiterEmailTo, recruiterEmailCc, ...publicJob } = job
 
-    return NextResponse.json({ job: publicJob })
+    return NextResponse.json({ job: { ...publicJob, hasApplied } })
   } catch (error) {
     console.error('Error fetching job:', error)
     return NextResponse.json(

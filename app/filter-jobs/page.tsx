@@ -33,6 +33,7 @@ interface Job {
   budgetIsEstimate: boolean
   createdAt: string
   expiresAt: string
+  hasApplied?: boolean
 }
 
 interface GateAnswer {
@@ -357,18 +358,27 @@ export default function FilterJobsPage() {
                           href={`/jobs/${job.slug}`}
                           className="block bg-white p-6 rounded-xl shadow hover:shadow-lg transition"
                         >
-                          <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                          {job.companyName && (
-                            <p className="text-gray-600 mt-1">{job.companyName}</p>
-                          )}
-                          <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-2">
-                            <span>{job.locationText}</span>
-                            <span>•</span>
-                            <span>{job.remotePolicy}</span>
-                            <span>•</span>
-                            <span>{job.contractType}</span>
-                            <span>•</span>
-                            <span>{job.roleCategory}</span>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+                              {job.companyName && (
+                                <p className="text-gray-600 mt-1">{job.companyName}</p>
+                              )}
+                              <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-2">
+                                <span>{job.locationText}</span>
+                                <span>•</span>
+                                <span>{job.remotePolicy}</span>
+                                <span>•</span>
+                                <span>{job.contractType}</span>
+                                <span>•</span>
+                                <span>{job.roleCategory}</span>
+                              </div>
+                            </div>
+                            {job.hasApplied && (
+                              <span className="flex-shrink-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                Applied
+                              </span>
+                            )}
                           </div>
                         </Link>
                       ))}
