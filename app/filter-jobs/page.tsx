@@ -94,23 +94,6 @@ export default function FilterJobsPage() {
     }
   }, [sessionStatus, session?.user?.email, setValue])
 
-  // Auto-filter jobs when signed in and we have answers
-  useEffect(() => {
-    if (
-      !loading &&
-      questions.length > 0 &&
-      sessionStatus === 'authenticated' &&
-      !hasAutoFiltered &&
-      (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0)
-    ) {
-      const allAnswers = { ...existingAnswers, ...multiValues }
-      if (Object.keys(allAnswers).length > 0) {
-        filterJobs(allAnswers, true)
-        setHasAutoFiltered(true)
-      }
-    }
-  }, [loading, questions, sessionStatus, existingAnswers, multiValues, hasAutoFiltered, filterJobs])
-
   const filterJobs = useCallback(async (answers: Record<string, unknown>, isAuto = false) => {
     if (!isAuto) {
       setSubmitting(true)
@@ -132,6 +115,23 @@ export default function FilterJobsPage() {
       }
     }
   }, [])
+
+  // Auto-filter jobs when signed in and we have answers
+  useEffect(() => {
+    if (
+      !loading &&
+      questions.length > 0 &&
+      sessionStatus === 'authenticated' &&
+      !hasAutoFiltered &&
+      (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0)
+    ) {
+      const allAnswers = { ...existingAnswers, ...multiValues }
+      if (Object.keys(allAnswers).length > 0) {
+        filterJobs(allAnswers, true)
+        setHasAutoFiltered(true)
+      }
+    }
+  }, [loading, questions, sessionStatus, existingAnswers, multiValues, hasAutoFiltered, filterJobs])
 
   const onSubmit = async (data: Record<string, unknown>) => {
     // Merge existing answers with new form data
