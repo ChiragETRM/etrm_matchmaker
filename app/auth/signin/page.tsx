@@ -193,7 +193,7 @@ function SignInContent() {
           <div className="space-y-4">
             <button
               onClick={handleSignIn}
-              disabled={isClearingCookies || status === 'loading'}
+              disabled={isClearingCookies}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
