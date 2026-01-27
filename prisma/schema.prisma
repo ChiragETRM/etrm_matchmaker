@@ -18,12 +18,20 @@ model User {
   email         String    @unique
   emailVerified DateTime? @map("email_verified")
   image         String?
+  // Additional Google profile fields
+  givenName     String?   @map("given_name")
+  familyName    String?   @map("family_name")
+  locale        String?
+  googleSub     String?   @map("google_sub") // Google's unique identifier (sub)
+  // Store raw profile data as JSON for any additional fields
+  profileData   String?   @map("profile_data") @db.Text // JSON string with all profile data
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   accounts Account[]
   sessions Session[]
 
+  @@index([googleSub])
   @@map("users")
 }
 

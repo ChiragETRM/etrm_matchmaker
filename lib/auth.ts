@@ -76,12 +76,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
-      // Ensure proper redirect handling
+      // Request additional scopes to get maximum user information
       authorization: {
         params: {
           prompt: 'consent',
           access_type: 'offline',
           response_type: 'code',
+          scope: 'openid email profile https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         },
       },
     }),
@@ -95,10 +96,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Handle database adapter sessions (user is provided)
       if (user && session?.user) {
         session.user.id = user.id
+        // Include additional profile data in session
+        if (user.givenName) session.user.givenName = user.givenName
+        if (user.familyName) session.user.familyName = user.familyName
+        if (user.locale) session.user.locale = user.locale
+        if (user.googleSub) session.user.googleSub = user.googleSub
       }
       // Handle JWT sessions (token is provided, fallback)
       else if (token && session?.user) {
         session.user.id = token.sub || token.id
+        if (token.givenName) session.user.givenName = token.givenName
+        if (token.familyName) session.user.familyName = token.familyName
+        if (token.locale) session.user.locale = token.locale
+        if (token.googleSub) session.user.googleSub = token.googleSub
       }
       return session
     },
@@ -128,6 +138,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account, profile }) {
       // Allow all sign-ins - you can add additional checks here if needed
       return true
+    },
+    // Capture and store all available Google profile data
+    async jwt({ token, account, profile, user }) {
+      // On first sign in, profile and account are available
+      if (account && profile) {
+        // Store all available profile data
+        token.googleSub = profile.sub || account.providerAccountId
+        token.givenName = profile.given_name
+        token.familyName = profile.family_name
+        token.locale = profile.locale
+        token.picture = profile.picture
+        token.emailVerified = profile.email_verified
+        
+        // Store complete profile data as JSON
+        token.profileData = JSON.stringify({
+          sub: profile.sub,
+          email: profile.email,
+          email_verified: profile.email_verified,
+          name: profile.name,
+          given_name: profile.given_name,
+          family_name: profile.family_name,
+          picture: profile.picture,
+          locale: profile.locale,
+          // Include any additional fields that might be present
+          ...profile,
+        })
+      }
+      
+      // If user is provided (database adapter), include user ID
+      if (user) {
+        token.id = user.id
+      }
+      
+      return token
     },
   },
   // Trust host for proper URL detection (especially on Vercel)
@@ -187,10 +231,46 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   // Enable debug logging in development
   debug: !isProduction,
-  // Event handlers for better error tracking
+  // Event handlers for better error tracking and data storage
   events: {
-    async signIn({ user, account, isNewUser }) {
-      // Log successful sign-ins (optional)
+    async signIn({ user, account, profile, isNewUser }) {
+      // Update user with all available Google profile data
+      if (account?.provider === 'google' && user?.id && profile) {
+        try {
+          const profileDataJson = JSON.stringify({
+            sub: profile.sub,
+            email: profile.email,
+            email_verified: profile.email_verified,
+            name: profile.name,
+            given_name: profile.given_name,
+            family_name: profile.family_name,
+            picture: profile.picture,
+            locale: profile.locale,
+            // Include any additional fields that might be present
+            ...profile,
+          })
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              givenName: profile.given_name || null,
+              familyName: profile.family_name || null,
+              locale: profile.locale || null,
+              googleSub: profile.sub || account.providerAccountId || null,
+              profileData: profileDataJson,
+              // Update basic fields if they're missing or changed
+              name: profile.name || user.name,
+              image: profile.picture || user.image,
+              emailVerified: profile.email_verified 
+                ? new Date() 
+                : user.emailVerified,
+            },
+          })
+        } catch (error) {
+          // Log error but don't fail sign-in
+          console.error('[NextAuth] Error updating user profile data:', error)
+        }
+      }
     },
     async signOut() {
       // Clean up on sign out (optional)
