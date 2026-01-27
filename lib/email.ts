@@ -45,6 +45,34 @@ async function sendViaPostmark(
   }
 
   try {
+    const emailPayload: any = {
+      From: fromEmail,
+      To: options.to,
+      Subject: options.subject,
+      HtmlBody: options.html,
+    }
+
+    // Only include Cc if there are CC recipients
+    if (options.cc && options.cc.length > 0) {
+      emailPayload.Cc = options.cc.join(', ')
+    }
+
+    // Only include attachments if there are any
+    if (options.attachments && options.attachments.length > 0) {
+      emailPayload.Attachments = options.attachments.map((att) => ({
+        Name: att.filename,
+        Content: typeof att.content === 'string' ? att.content : att.content.toString('base64'),
+        ContentType: att.contentType || 'application/octet-stream',
+      }))
+    }
+
+    console.log('Sending email via Postmark:', {
+      to: options.to,
+      cc: options.cc,
+      subject: options.subject,
+      hasAttachments: !!(options.attachments && options.attachments.length > 0),
+    })
+
     const response = await fetch('https://api.postmarkapp.com/email', {
       method: 'POST',
       headers: {
@@ -52,32 +80,28 @@ async function sendViaPostmark(
         'Content-Type': 'application/json',
         'X-Postmark-Server-Token': apiKey,
       },
-      body: JSON.stringify({
-        From: fromEmail,
-        To: options.to,
-        Cc: options.cc?.join(', '),
-        Subject: options.subject,
-        HtmlBody: options.html,
-        Attachments: options.attachments?.map((att) => ({
-          Name: att.filename,
-          Content: typeof att.content === 'string' ? att.content : att.content.toString('base64'),
-          ContentType: att.contentType || 'application/octet-stream',
-        })),
-      }),
+      body: JSON.stringify(emailPayload),
     })
 
     const data = await response.json()
 
     if (response.ok) {
+      console.log('Email sent successfully via Postmark:', data.MessageID)
       return { messageId: data.MessageID, success: true }
     } else {
+      console.error('Postmark API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: data,
+      })
       return {
         messageId: '',
         success: false,
-        error: data.Message || 'Unknown error',
+        error: data.Message || data.ErrorCode || `HTTP ${response.status}: ${response.statusText}`,
       }
     }
   } catch (error) {
+    console.error('Postmark fetch error:', error)
     return {
       messageId: '',
       success: false,

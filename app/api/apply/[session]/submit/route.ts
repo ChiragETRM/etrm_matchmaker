@@ -218,16 +218,24 @@ export async function POST(
         cc: session.job.recruiterEmailCc,
         subject,
         hasAttachment: !!resume.name,
+        attachmentSize: resumeBuffer.length,
       })
+
+      // Ensure we have a valid email address
+      if (!session.job.recruiterEmailTo || !session.job.recruiterEmailTo.includes('@')) {
+        throw new Error(`Invalid recruiter email address: ${session.job.recruiterEmailTo}`)
+      }
 
       const emailResponse = await sendEmail({
         to: session.job.recruiterEmailTo,
-        cc: session.job.recruiterEmailCc,
+        cc: session.job.recruiterEmailCc && session.job.recruiterEmailCc.length > 0 
+          ? session.job.recruiterEmailCc 
+          : undefined,
         subject,
         html: emailHtml,
         attachments: [
           {
-            filename: resume.name || 'resume',
+            filename: resume.name || 'resume.pdf',
             content: resumeBuffer,
             contentType: resumeContentType,
           },
@@ -245,6 +253,15 @@ export async function POST(
         success: emailResponse.success,
         messageId: emailResponse.messageId,
         error: emailResponse.error,
+      }
+
+      // If email failed, log it prominently
+      if (!emailResult.success) {
+        console.error('CRITICAL: Email to recruiter failed!', {
+          to: session.job.recruiterEmailTo,
+          error: emailResult.error,
+          applicationId: application.id,
+        })
       }
     } catch (emailError) {
       console.error('Email sending error (application was saved successfully):', emailError)

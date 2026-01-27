@@ -51,19 +51,25 @@ export function renderSimpleMarkdown(text: string): string {
         inList = false
       }
 
-      // Empty line = paragraph break
+      // Skip empty lines to reduce unnecessary spacing
       if (line === '') {
-        processedLines.push('<br />')
-      } else {
-        // Check if line looks like a header (ends with colon or all caps section)
-        const isHeader = /^[A-Z][A-Za-z\s]+:$/.test(line) ||
-                        /^(Summary|Responsibilities|Requirements|Skills|Qualifications|Nice to Have|About|Overview|Description|Experience|Benefits|What you|Who you|Your role|The role|Key|Required|Preferred|Duties|Tasks):?$/i.test(line.replace(/<[^>]*>/g, ''))
-
-        if (isHeader) {
-          processedLines.push(`<p class="font-semibold mt-4 mb-2">${line}</p>`)
-        } else {
-          processedLines.push(`<p class="mb-2">${line}</p>`)
+        // Only add a small break if the previous line wasn't empty (avoid multiple breaks)
+        if (i > 0 && lines[i - 1].trim() !== '') {
+          processedLines.push('<p class="mb-1"></p>')
         }
+        continue
+      }
+      
+      // Check if line looks like a header (ends with colon or all caps section)
+      const isHeader = /^[A-Z][A-Za-z\s]+:$/.test(line) ||
+                      /^(Summary|Responsibilities|Requirements|Skills|Qualifications|Nice to Have|About|Overview|Description|Experience|Benefits|What you|Who you|Your role|The role|Key|Required|Preferred|Duties|Tasks):?$/i.test(line.replace(/<[^>]*>/g, ''))
+
+      if (isHeader) {
+        // Reduced spacing: mt-2 instead of mt-4, mb-1 instead of mb-2
+        processedLines.push(`<p class="font-semibold mt-2 mb-1">${line}</p>`)
+      } else {
+        // Reduced spacing: mb-1 instead of mb-2
+        processedLines.push(`<p class="mb-1">${line}</p>`)
       }
     }
   }
