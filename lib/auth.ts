@@ -237,6 +237,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Update user with all available Google profile data
       if (account?.provider === 'google' && user?.id && profile) {
         try {
+          // Fetch current user to get existing emailVerified value
+          const currentUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { emailVerified: true },
+          })
+
           const profileDataJson = JSON.stringify({
             sub: profile.sub,
             email: profile.email,
@@ -259,11 +265,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               googleSub: profile.sub || account.providerAccountId || null,
               profileData: profileDataJson,
               // Update basic fields if they're missing or changed
-              name: profile.name || user.name,
-              image: profile.picture || user.image,
+              name: profile.name || user.name || null,
+              image: profile.picture || user.image || null,
               emailVerified: profile.email_verified 
                 ? new Date() 
-                : user.emailVerified,
+                : currentUser?.emailVerified || null,
             },
           })
         } catch (error) {
