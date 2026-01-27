@@ -31,6 +31,14 @@ interface GateAnswer {
   updatedAt: string
 }
 
+interface Question {
+  key: string
+  label: string
+  type: 'BOOLEAN' | 'SINGLE_SELECT' | 'MULTI_SELECT' | 'NUMBER' | 'COUNTRY'
+  options: string[] | null
+  orderIndex: number
+}
+
 export default function CandidateDashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -54,6 +62,12 @@ export default function CandidateDashboardPage() {
   const [currentResumeFileId, setCurrentResumeFileId] = useState<string | null>(null)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [updateSuccess, setUpdateSuccess] = useState(false)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [questionsLoading, setQuestionsLoading] = useState(false)
+  const [skillsFormValues, setSkillsFormValues] = useState<Record<string, any>>({})
+  const [multiSelectValues, setMultiSelectValues] = useState<Record<string, string[]>>({})
+  const [savingSkills, setSavingSkills] = useState(false)
+  const [skillsSaveSuccess, setSkillsSaveSuccess] = useState(false)
 
   const email = session?.user?.email || ''
 
@@ -97,10 +111,25 @@ export default function CandidateDashboardPage() {
     }
   }
 
+  // Fetch questions for Skills/Experience section
+  const fetchQuestions = async () => {
+    setQuestionsLoading(true)
+    try {
+      const res = await fetch('/api/public/filter-questions', { cache: 'no-store' })
+      const data = await res.json()
+      setQuestions(data.questions ?? [])
+    } catch (e) {
+      console.error('Error fetching questions:', e)
+    } finally {
+      setQuestionsLoading(false)
+    }
+  }
+
   // Auto-fetch when session is loaded
   useEffect(() => {
     if (status === 'authenticated' && email) {
       fetchData()
+      fetchQuestions()
       setProfileForm({
         name: session?.user?.name || '',
         phone: '',
@@ -108,6 +137,25 @@ export default function CandidateDashboardPage() {
       })
     }
   }, [status, email, session?.user?.name])
+
+  // Pre-populate form values when gate answers or questions are loaded
+  useEffect(() => {
+    if (gateAnswers.length > 0 && questions.length > 0) {
+      const formValues: Record<string, any> = {}
+      const multiValues: Record<string, string[]> = {}
+      
+      gateAnswers.forEach((ga) => {
+        if (Array.isArray(ga.answer)) {
+          multiValues[ga.questionKey] = ga.answer
+        } else {
+          formValues[ga.questionKey] = ga.answer
+        }
+      })
+      
+      setSkillsFormValues(formValues)
+      setMultiSelectValues(multiValues)
+    }
+  }, [gateAnswers, questions])
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -178,6 +226,36 @@ export default function CandidateDashboardPage() {
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     await updateProfile()
+  }
+
+  const handleSkillsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSavingSkills(true)
+    setSkillsSaveSuccess(false)
+    
+    try {
+      // Merge single values and multi-select values
+      const allAnswers = { ...skillsFormValues, ...multiSelectValues }
+      
+      const res = await fetch('/api/dashboard/candidate/gate-answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: allAnswers }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Save failed')
+      }
+
+      setSkillsSaveSuccess(true)
+      setTimeout(() => setSkillsSaveSuccess(false), 3000)
+      fetchData() // Refresh to show updated gate answers
+    } catch (error) {
+      console.error('Save error:', error)
+      alert('Failed to save skills/experience. Please try again.')
+    } finally {
+      setSavingSkills(false)
+    }
   }
 
   if (status === 'loading' || status === 'unauthenticated') {
@@ -317,6 +395,122 @@ export default function CandidateDashboardPage() {
               </div>
             </form>
           </div>
+        </div>
+
+        {/* Skills / Experience Section */}
+        <div className="bg-white rounded-xl shadow p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Skills / Experience</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Update your skills and experience information. This will be used to prepopulate forms when applying to jobs with 1-click apply, helping you apply faster to jobs that match your profile.
+          </p>
+          
+          {questionsLoading ? (
+            <div className="text-center text-gray-500 py-8">Loading questions...</div>
+          ) : questions.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              No questions available yet. Questions will appear here once jobs are posted with gate requirements.
+            </div>
+          ) : (
+            <form onSubmit={handleSkillsSubmit} className="space-y-5">
+              {questions.map((q) => (
+                <div key={q.key} className="border-b border-gray-100 pb-4 last:border-0">
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    {q.label}
+                  </label>
+                  {q.type === 'BOOLEAN' && (
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name={q.key}
+                          value="true"
+                          checked={skillsFormValues[q.key] === true || skillsFormValues[q.key] === 'true'}
+                          onChange={() => setSkillsFormValues({ ...skillsFormValues, [q.key]: true })}
+                          className="w-4 h-4"
+                        />
+                        Yes
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name={q.key}
+                          value="false"
+                          checked={skillsFormValues[q.key] === false || skillsFormValues[q.key] === 'false'}
+                          onChange={() => setSkillsFormValues({ ...skillsFormValues, [q.key]: false })}
+                          className="w-4 h-4"
+                        />
+                        No
+                      </label>
+                    </div>
+                  )}
+                  {q.type === 'SINGLE_SELECT' && (
+                    <select
+                      value={skillsFormValues[q.key] || ''}
+                      onChange={(e) => setSkillsFormValues({ ...skillsFormValues, [q.key]: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                    >
+                      <option value="">Select</option>
+                      {q.options?.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {q.type === 'MULTI_SELECT' && (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {q.options?.map((o) => (
+                        <label key={o} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={(multiSelectValues[q.key] ?? []).includes(o)}
+                            onChange={(e) => {
+                              const prev = multiSelectValues[q.key] ?? []
+                              const next = e.target.checked
+                                ? [...prev.filter((x) => x !== o), o]
+                                : prev.filter((x) => x !== o)
+                              setMultiSelectValues((m) => ({ ...m, [q.key]: next }))
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-gray-700">{o}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {q.type === 'NUMBER' && (
+                    <input
+                      type="number"
+                      value={skillsFormValues[q.key] || ''}
+                      onChange={(e) => setSkillsFormValues({ ...skillsFormValues, [q.key]: e.target.value ? Number(e.target.value) : '' })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                    />
+                  )}
+                  {q.type === 'COUNTRY' && (
+                    <input
+                      type="text"
+                      value={skillsFormValues[q.key] || ''}
+                      onChange={(e) => setSkillsFormValues({ ...skillsFormValues, [q.key]: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                      placeholder="Country"
+                    />
+                  )}
+                </div>
+              ))}
+              <div className="flex items-center gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={savingSkills}
+                  className="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
+                >
+                  {savingSkills ? 'Saving...' : 'Save Skills / Experience'}
+                </button>
+                {skillsSaveSuccess && (
+                  <span className="text-sm text-green-600">✓ Skills/Experience saved successfully!</span>
+                )}
+              </div>
+            </form>
+          )}
         </div>
 
         {/* Saved Gate Answers Section */}
