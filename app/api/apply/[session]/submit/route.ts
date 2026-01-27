@@ -155,83 +155,102 @@ export async function POST(
       },
     })
 
-    // Send email to recruiter
-    const subjectPrefix = session.job.emailSubjectPrefix || 'Qualified Candidate'
-    const subject = `${subjectPrefix} | ${session.job.title} | ${data.candidateName} | ${session.job.locationText}`
+    // Send email to recruiter (non-blocking - submission succeeds even if email fails)
+    let emailResult: { success: boolean; messageId: string; error?: string } = {
+      success: false,
+      messageId: '',
+      error: 'Email not attempted',
+    }
 
-    const questions = session.job.questionnaire?.questions ?? []
-    const answersHtml = questions
-      .map((q) => {
-        const answer = answers[q.key]
-        let displayValue = answer
-        if (Array.isArray(answer)) {
-          displayValue = answer.join(', ')
-        } else if (typeof answer === 'boolean') {
-          displayValue = answer ? 'Yes' : 'No'
-        }
-        return `<tr><td><strong>${q.label}</strong></td><td>${displayValue || 'N/A'}</td></tr>`
+    try {
+      const subjectPrefix = session.job.emailSubjectPrefix || 'Qualified Candidate'
+      const subject = `${subjectPrefix} | ${session.job.title} | ${data.candidateName} | ${session.job.locationText}`
+
+      const questions = session.job.questionnaire?.questions ?? []
+      const answersHtml = questions
+        .map((q) => {
+          const answer = answers[q.key]
+          let displayValue = answer
+          if (Array.isArray(answer)) {
+            displayValue = answer.join(', ')
+          } else if (typeof answer === 'boolean') {
+            displayValue = answer ? 'Yes' : 'No'
+          }
+          return `<tr><td><strong>${q.label}</strong></td><td>${displayValue || 'N/A'}</td></tr>`
+        })
+        .join('')
+
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const resumeUrl = fileId ? `${baseUrl}/api/files/${fileId}` : 'N/A'
+      const jobLink = `${baseUrl}/jobs/${session.job.slug}`
+
+      const emailHtml = `
+        <h2>New Qualified Candidate Application</h2>
+
+        <h3>Job</h3>
+        <ul>
+          <li><strong>Role:</strong> ${session.job.title}</li>
+          <li><strong>Location:</strong> ${session.job.locationText}</li>
+          <li><strong>ETRM Packages:</strong> ${session.job.etrmPackages.join(', ') || 'N/A'}</li>
+          <li><strong>Link to job:</strong> <a href="${jobLink}">${jobLink}</a></li>
+        </ul>
+
+        <h3>Candidate</h3>
+        <ul>
+          <li><strong>Name:</strong> ${data.candidateName}</li>
+          <li><strong>Email:</strong> ${data.candidateEmail}</li>
+          <li><strong>Phone:</strong> ${data.candidatePhone || 'N/A'}</li>
+          <li><strong>LinkedIn:</strong> ${data.candidateLinkedin || 'N/A'}</li>
+        </ul>
+
+        <h3>Resume</h3>
+        <p>CV attached to this email. <a href="${resumeUrl}">Or download here</a>.</p>
+        ${answersHtml ? `
+        <h3>Questions &amp; Answers</h3>
+        <table border="1" cellpadding="5" cellspacing="0">
+          ${answersHtml}
+        </table>
+        ` : ''}
+      `
+
+      emailResult = await sendEmail({
+        to: session.job.recruiterEmailTo,
+        cc: session.job.recruiterEmailCc,
+        subject,
+        html: emailHtml,
+        attachments: [
+          {
+            filename: resume.name || 'resume',
+            content: resumeBuffer,
+            contentType: resumeContentType,
+          },
+        ],
       })
-      .join('')
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const resumeUrl = fileId ? `${baseUrl}/api/files/${fileId}` : 'N/A'
-    const jobLink = `${baseUrl}/jobs/${session.job.slug}`
-
-    const emailHtml = `
-      <h2>New Qualified Candidate Application</h2>
-      
-      <h3>Job</h3>
-      <ul>
-        <li><strong>Role:</strong> ${session.job.title}</li>
-        <li><strong>Location:</strong> ${session.job.locationText}</li>
-        <li><strong>ETRM Packages:</strong> ${session.job.etrmPackages.join(', ') || 'N/A'}</li>
-        <li><strong>Link to job:</strong> <a href="${jobLink}">${jobLink}</a></li>
-      </ul>
-
-      <h3>Candidate</h3>
-      <ul>
-        <li><strong>Name:</strong> ${data.candidateName}</li>
-        <li><strong>Email:</strong> ${data.candidateEmail}</li>
-        <li><strong>Phone:</strong> ${data.candidatePhone || 'N/A'}</li>
-        <li><strong>LinkedIn:</strong> ${data.candidateLinkedin || 'N/A'}</li>
-      </ul>
-
-      <h3>Resume</h3>
-      <p>CV attached to this email. <a href="${resumeUrl}">Or download here</a>.</p>
-      ${answersHtml ? `
-      <h3>Questions &amp; Answers</h3>
-      <table border="1" cellpadding="5" cellspacing="0">
-        ${answersHtml}
-      </table>
-      ` : ''}
-    `
-
-    const emailResult = await sendEmail({
-      to: session.job.recruiterEmailTo,
-      cc: session.job.recruiterEmailCc,
-      subject,
-      html: emailHtml,
-      attachments: [
-        {
-          filename: resume.name || 'resume',
-          content: resumeBuffer,
-          contentType: resumeContentType,
-        },
-      ],
-    })
+    } catch (emailError) {
+      console.error('Email sending error (application was saved successfully):', emailError)
+      emailResult = {
+        success: false,
+        messageId: '',
+        error: emailError instanceof Error ? emailError.message : 'Unknown email error',
+      }
+    }
 
     // Log email
-    await prisma.mailLog.create({
-      data: {
-        jobId: session.jobId,
-        applicationId: application.id,
-        toEmail: session.job.recruiterEmailTo,
-        ccEmails: session.job.recruiterEmailCc,
-        status: emailResult.success ? 'SENT' : 'FAILED',
-        providerMessageId: emailResult.messageId || null,
-        errorText: emailResult.error || null,
-      },
-    })
+    try {
+      await prisma.mailLog.create({
+        data: {
+          jobId: session.jobId,
+          applicationId: application.id,
+          toEmail: session.job.recruiterEmailTo,
+          ccEmails: session.job.recruiterEmailCc,
+          status: emailResult.success ? 'SENT' : 'FAILED',
+          providerMessageId: emailResult.messageId || null,
+          errorText: emailResult.error || null,
+        },
+      })
+    } catch (logError) {
+      console.error('Failed to create mail log:', logError)
+    }
 
     return NextResponse.json({
       success: true,

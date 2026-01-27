@@ -36,7 +36,12 @@ async function sendViaPostmark(
   const fromEmail = process.env.POSTMARK_FROM_EMAIL
 
   if (!apiKey || !fromEmail) {
-    throw new Error('Postmark credentials not configured')
+    console.error('Postmark credentials not configured: missing', !apiKey ? 'POSTMARK_API_KEY' : 'POSTMARK_FROM_EMAIL')
+    return {
+      messageId: '',
+      success: false,
+      error: 'Postmark credentials not configured',
+    }
   }
 
   try {
