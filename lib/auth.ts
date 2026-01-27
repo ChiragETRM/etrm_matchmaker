@@ -85,6 +85,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           scope: 'openid email profile https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         },
       },
+      // Ensure PKCE is enabled (default in NextAuth v5, but explicit is better)
+      checks: ['pkce', 'state'],
     }),
   ],
   pages: {

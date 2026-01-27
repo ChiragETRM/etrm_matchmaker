@@ -44,13 +44,14 @@ function SignInContent() {
   // Handle errors by clearing cookies and retrying
   useEffect(() => {
     if (error && !isClearingCookies) {
-      console.error('Authentication error:', error)
+      console.error('Authentication error:', error, errorDetails)
       // Clear cookies on error to fix stale session issues
+      // This is especially important for PKCE errors where cookies may be corrupted
       clearAuthCookies()
       setIsClearingCookies(true)
       
-      // If it's a configuration error, PKCE error, or other critical error, sign out first
-      if (error === 'Configuration' || error === 'AccessDenied' || error === 'PKCEError') {
+      // If it's a configuration error, PKCE error, state error, or other critical error, sign out first
+      if (error === 'Configuration' || error === 'AccessDenied' || error === 'PKCEError' || error === 'StateError') {
         signOut({ redirect: false }).then(() => {
           // Clear cookies again after sign out
           setTimeout(() => {
@@ -157,6 +158,8 @@ function SignInContent() {
                   ? 'Access denied. Please try again.'
                   : error === 'Verification'
                   ? 'Verification error. Please try again.'
+                  : error === 'PKCEError' || error === 'StateError'
+                  ? 'Session error. Please clear your browser cookies and try again.'
                   : 'An error occurred during sign in. Please try again.'}
               </p>
               {errorDetails && (
