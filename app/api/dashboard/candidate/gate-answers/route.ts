@@ -28,25 +28,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const data = bodySchema.parse(body)
 
-    // Upsert each answer
-    for (const [questionKey, answer] of Object.entries(data.answers)) {
-      await prisma.candidateGateAnswer.upsert({
-        where: {
-          candidateEmail_questionKey: {
+    // Batch all upserts in a single transaction (avoids N sequential DB round-trips)
+    await prisma.$transaction(
+      Object.entries(data.answers).map(([questionKey, answer]) =>
+        prisma.candidateGateAnswer.upsert({
+          where: {
+            candidateEmail_questionKey: {
+              candidateEmail: email,
+              questionKey: questionKey,
+            },
+          },
+          update: {
+            answerJson: JSON.stringify(answer),
+          },
+          create: {
             candidateEmail: email,
             questionKey: questionKey,
+            answerJson: JSON.stringify(answer),
           },
-        },
-        update: {
-          answerJson: JSON.stringify(answer),
-        },
-        create: {
-          candidateEmail: email,
-          questionKey: questionKey,
-          answerJson: JSON.stringify(answer),
-        },
-      })
-    }
+        })
+      )
+    )
 
     return NextResponse.json({ success: true })
   } catch (error) {

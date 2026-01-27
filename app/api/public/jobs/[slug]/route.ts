@@ -58,7 +58,15 @@ export async function GET(
     // Return job without sensitive info
     const { recruiterEmailTo, recruiterEmailCc, ...publicJob } = job
 
-    return NextResponse.json({ job: { ...publicJob, hasApplied } })
+    const response = NextResponse.json({ job: { ...publicJob, hasApplied } })
+
+    // Cache individual job details for 60s, serve stale while revalidating for up to 5 minutes
+    response.headers.set(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=300'
+    )
+
+    return response
   } catch (error) {
     console.error('Error fetching job:', error)
     return NextResponse.json(

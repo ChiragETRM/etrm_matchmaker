@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
       console.error('Error checking applications:', error)
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       jobs: filtered.map((job) => ({
         ...job,
         hasApplied: appliedJobIds.has(job.id),
@@ -141,6 +141,14 @@ export async function GET(request: NextRequest) {
         ? { detectedCountry: userCountryName ?? userCountryCode }
         : {}),
     })
+
+    // Cache job listings for 60s, serve stale while revalidating for up to 5 minutes
+    response.headers.set(
+      'Cache-Control',
+      'public, s-maxage=60, stale-while-revalidate=300'
+    )
+
+    return response
   } catch (error) {
     console.error('Error fetching jobs:', error)
     return NextResponse.json(

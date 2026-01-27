@@ -54,7 +54,15 @@ export async function GET() {
       (a, b) => a.orderIndex - b.orderIndex
     )
 
-    return NextResponse.json({ questions })
+    const response = NextResponse.json({ questions })
+
+    // Filter questions change infrequently -- cache for 5 minutes
+    response.headers.set(
+      'Cache-Control',
+      'public, s-maxage=300, stale-while-revalidate=600'
+    )
+
+    return response
   } catch (error) {
     console.error('Error fetching filter questions:', error)
     return NextResponse.json(

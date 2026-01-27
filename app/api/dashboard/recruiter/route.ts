@@ -20,23 +20,43 @@ export async function GET(request: NextRequest) {
 
     const email = session.user.email
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
     const jobs = await prisma.job.findMany({
       where: { recruiterEmailTo: email },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        companyName: true,
+        locationText: true,
+        roleCategory: true,
+        createdAt: true,
+        archived: true,
         questionnaire: {
-          include: {
-            questions: { orderBy: { orderIndex: 'asc' } },
+          select: {
+            questions: {
+              select: { id: true, key: true, label: true, type: true, optionsJson: true, orderIndex: true },
+              orderBy: { orderIndex: 'asc' },
+            },
           },
         },
         applications: {
+          select: {
+            id: true,
+            candidateName: true,
+            candidateEmail: true,
+            candidatePhone: true,
+            answersJson: true,
+            recruiterStatus: true,
+            createdAt: true,
+            resumeFileId: true,
+          },
           orderBy: { createdAt: 'desc' },
-          include: { resumeFile: true },
         },
       },
       orderBy: { createdAt: 'desc' },
     })
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
     const list = jobs.map((j) => ({
       id: j.id,

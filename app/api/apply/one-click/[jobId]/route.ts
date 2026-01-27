@@ -113,18 +113,20 @@ export async function POST(
     // Check if job has gate rules
     const hasGates = job.questionnaire && job.questionnaire.gateRules.length > 0
 
+    // Fetch saved gate answers once upfront (reused for evaluation + final answers)
+    let savedAnswersMap: Record<string, any> = {}
     if (hasGates) {
-      const gateRules = job.questionnaire!.gateRules
-
-      // Get saved gate answers for this candidate
       const savedAnswers = await prisma.candidateGateAnswer.findMany({
         where: { candidateEmail: email },
+        select: { questionKey: true, answerJson: true },
       })
-
-      const savedAnswersMap: Record<string, any> = {}
       savedAnswers.forEach((sa) => {
         savedAnswersMap[sa.questionKey] = JSON.parse(sa.answerJson)
       })
+    }
+
+    if (hasGates) {
+      const gateRules = job.questionnaire!.gateRules
 
       // Merge saved answers with provided answers (provided takes precedence)
       const allAnswers: Record<string, any> = { ...savedAnswersMap, ...(providedAnswers || {}) }
@@ -160,25 +162,27 @@ export async function POST(
           )
         }
 
-        // Save/update gate answers for future use
-        for (const [key, value] of Object.entries(providedAnswers)) {
-          await prisma.candidateGateAnswer.upsert({
-            where: {
-              candidateEmail_questionKey: {
+        // Save/update gate answers for future use (batched in single transaction)
+        await prisma.$transaction(
+          Object.entries(providedAnswers).map(([key, value]) =>
+            prisma.candidateGateAnswer.upsert({
+              where: {
+                candidateEmail_questionKey: {
+                  candidateEmail: email,
+                  questionKey: key,
+                },
+              },
+              update: {
+                answerJson: JSON.stringify(value),
+              },
+              create: {
                 candidateEmail: email,
                 questionKey: key,
+                answerJson: JSON.stringify(value),
               },
-            },
-            update: {
-              answerJson: JSON.stringify(value),
-            },
-            create: {
-              candidateEmail: email,
-              questionKey: key,
-              answerJson: JSON.stringify(value),
-            },
-          })
-        }
+            })
+          )
+        )
       } else if (missingAnswers.length > 0) {
         // Need to collect answers for missing questions
         const questions = job.questionnaire!.questions.filter((q) =>
@@ -229,16 +233,10 @@ export async function POST(
       }
     }
 
-    // Get final answers (either from provided, saved, or empty if no gates)
+    // Build final answers from already-fetched savedAnswersMap (no duplicate DB query)
     let finalAnswers: Record<string, any> = {}
     if (hasGates && job.questionnaire) {
-      const savedAnswers = await prisma.candidateGateAnswer.findMany({
-        where: { candidateEmail: email },
-      })
-      savedAnswers.forEach((sa) => {
-        finalAnswers[sa.questionKey] = JSON.parse(sa.answerJson)
-      })
-      // Merge with provided answers if any
+      finalAnswers = { ...savedAnswersMap }
       if (providedAnswers) {
         finalAnswers = { ...finalAnswers, ...providedAnswers }
       }

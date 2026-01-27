@@ -26,11 +26,10 @@ export default function SessionProvider({
 
   return (
     <NextAuthSessionProvider
-      // Refetch session on window focus to catch session updates
-      refetchOnWindowFocus={true}
-      // Refetch session every 5 minutes to keep it fresh
-      refetchInterval={5 * 60}
-      // Refetch when mounting to ensure we have the latest session
+      // Disable refetch on every tab switch to avoid excessive API calls
+      refetchOnWindowFocus={false}
+      // Refetch session every 30 minutes (sessions have 30-day TTL -- 5 min was excessive)
+      refetchInterval={30 * 60}
       refetchWhenOffline={false}
     >
       {children}

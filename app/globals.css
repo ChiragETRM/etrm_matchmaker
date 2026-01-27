@@ -11,8 +11,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  /* Font family is now set via next/font in layout.tsx for optimized loading */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -49,6 +49,8 @@ export async function GET(
             'Content-Type': fileObject.mimeType || 'application/octet-stream',
             'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
             'Content-Length': fileObject.sizeBytes.toString(),
+            // Files are immutable once uploaded -- cache for 1 day
+            'Cache-Control': 'private, max-age=86400, immutable',
           },
         })
       } catch (error) {
@@ -90,6 +92,8 @@ export async function GET(
             'Content-Type': fileObject.mimeType || 'application/octet-stream',
             'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
             'Content-Length': fileObject.sizeBytes.toString(),
+            // Files are immutable once uploaded -- cache for 1 day
+            'Cache-Control': 'private, max-age=86400, immutable',
           },
         })
       } catch (error) {

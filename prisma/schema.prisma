@@ -112,6 +112,7 @@ model Job {
   @@index([status])
   @@index([recruiterEmailTo])
   @@index([archived])
+  @@index([status, archived, expiresAt])
   @@map("jobs")
 }
 
@@ -196,6 +197,7 @@ model Application {
 
   @@index([jobId])
   @@index([candidateEmail])
+  @@index([candidateEmail, jobId])
   @@map("applications")
 }
 
