@@ -117,7 +117,7 @@ export default function JobDetailPage() {
           </div>
 
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">ETRM Details</h2>
+            <h2 className="text-lg font-semibold mb-2">ETRM Role Details</h2>
             <div className="space-y-2 text-sm">
               {job.etrmPackages.length > 0 && (
                 <div>

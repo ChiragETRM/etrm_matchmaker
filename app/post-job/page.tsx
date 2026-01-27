@@ -416,9 +416,9 @@ export default function PostJobPage() {
             </div>
           </section>
 
-          {/* ETRM Details */}
+          {/* ETRM Role Details */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">ETRM Details</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">ETRM Role Details</h2>
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
