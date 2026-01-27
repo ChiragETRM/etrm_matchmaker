@@ -26,6 +26,9 @@ export async function POST(
                 gateRules: {
                   orderBy: { orderIndex: 'asc' },
                 },
+                questions: {
+                  orderBy: { orderIndex: 'asc' },
+                },
               },
             },
           },
