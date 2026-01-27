@@ -11,7 +11,7 @@ export default function Nav() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
         <Link
           href="/"
-          className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition"
+          className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition mr-auto"
         >
           ETRM Match Maker
         </Link>

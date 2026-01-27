@@ -9,8 +9,11 @@ export default function Home() {
           <h1 className="text-6xl font-extrabold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             ETRM Match Maker
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
-            ETRM-focused job posting and application system
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-2">
+            ETRM-focused job portal
+          </p>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-4">
+            Built by ETRM people for ETRM people
           </p>
         </div>
 
