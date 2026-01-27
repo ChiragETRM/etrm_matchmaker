@@ -36,11 +36,21 @@ async function sendViaPostmark(
   const fromEmail = process.env.POSTMARK_FROM_EMAIL
 
   if (!apiKey || !fromEmail) {
-    console.error('Postmark credentials not configured: missing', !apiKey ? 'POSTMARK_API_KEY' : 'POSTMARK_FROM_EMAIL')
+    const missing = []
+    if (!apiKey) missing.push('POSTMARK_API_KEY')
+    if (!fromEmail) missing.push('POSTMARK_FROM_EMAIL')
+    console.error('Postmark credentials not configured. Missing:', missing.join(', '))
+    console.error('To fix this:')
+    console.error('1. Sign up at https://postmarkapp.com (free tier available)')
+    console.error('2. Get your Server API Token from Postmark dashboard')
+    console.error('3. Add to your .env file:')
+    console.error(`   POSTMARK_API_KEY="your-server-api-token"`)
+    console.error(`   POSTMARK_FROM_EMAIL="noreply@yourdomain.com"`)
+    console.error('4. For production (Vercel), add these to Environment Variables in Vercel dashboard')
     return {
       messageId: '',
       success: false,
-      error: 'Postmark credentials not configured',
+      error: `Postmark credentials not configured. Missing: ${missing.join(', ')}. See server logs for setup instructions.`,
     }
   }
 
