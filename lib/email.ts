@@ -1,5 +1,7 @@
 // Email sending abstraction
-// Supports Postmark, SendGrid, or AWS SES
+// Supports Postmark, SMTP (Gmail), SendGrid, or AWS SES
+
+import nodemailer from 'nodemailer'
 
 interface EmailOptions {
   to: string
@@ -18,9 +20,16 @@ export async function sendEmail(options: EmailOptions): Promise<{
   success: boolean
   error?: string
 }> {
-  const provider = process.env.EMAIL_PROVIDER || 'POSTMARK'
+  const provider = process.env.EMAIL_PROVIDER || 'SMTP'
 
-  if (provider === 'POSTMARK') {
+  // Auto-detect provider based on available credentials
+  const hasSmtp = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD
+  const hasPostmark = process.env.POSTMARK_API_KEY && process.env.POSTMARK_FROM_EMAIL
+
+  // Use SMTP if explicitly set or if SMTP credentials are available
+  if (provider === 'SMTP' || (provider === 'POSTMARK' && !hasPostmark && hasSmtp)) {
+    return sendViaSMTP(options)
+  } else if (provider === 'POSTMARK' && hasPostmark) {
     return sendViaPostmark(options)
   } else if (provider === 'SENDGRID') {
     return sendViaSendGrid(options)
@@ -116,6 +125,80 @@ async function sendViaPostmark(
       messageId: '',
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
+
+async function sendViaSMTP(
+  options: EmailOptions
+): Promise<{ messageId: string; success: boolean; error?: string }> {
+  const smtpHost = process.env.SMTP_HOST
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10)
+  const smtpUser = process.env.SMTP_USER
+  const smtpPassword = process.env.SMTP_PASSWORD
+  const smtpFrom = process.env.SMTP_FROM || smtpUser
+
+  if (!smtpHost || !smtpUser || !smtpPassword) {
+    const missing = []
+    if (!smtpHost) missing.push('SMTP_HOST')
+    if (!smtpUser) missing.push('SMTP_USER')
+    if (!smtpPassword) missing.push('SMTP_PASSWORD')
+    console.error('SMTP credentials not configured. Missing:', missing.join(', '))
+    return {
+      messageId: '',
+      success: false,
+      error: `SMTP credentials not configured. Missing: ${missing.join(', ')}`,
+    }
+  }
+
+  try {
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465, // true for 465, false for other ports
+      auth: {
+        user: smtpUser,
+        pass: smtpPassword,
+      },
+    })
+
+    // Prepare attachments
+    const attachments = options.attachments?.map((att) => ({
+      filename: att.filename,
+      content: typeof att.content === 'string' ? Buffer.from(att.content, 'base64') : att.content,
+      contentType: att.contentType,
+    })) || []
+
+    console.log('Sending email via SMTP:', {
+      from: smtpFrom,
+      to: options.to,
+      cc: options.cc,
+      subject: options.subject,
+      hasAttachments: attachments.length > 0,
+    })
+
+    // Send email
+    const info = await transporter.sendMail({
+      from: smtpFrom,
+      to: options.to,
+      cc: options.cc && options.cc.length > 0 ? options.cc.join(', ') : undefined,
+      subject: options.subject,
+      html: options.html,
+      attachments,
+    })
+
+    console.log('Email sent successfully via SMTP:', info.messageId)
+    return {
+      messageId: info.messageId || '',
+      success: true,
+    }
+  } catch (error) {
+    console.error('SMTP send error:', error)
+    return {
+      messageId: '',
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown SMTP error',
     }
   }
 }
