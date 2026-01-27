@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
 
     const slug = generateSlug(data.title)
 
+    const hasQuestions = data.questions.length > 0
+
     const job = await prisma.job.create({
       data: {
         slug,
@@ -77,40 +79,42 @@ export async function POST(request: NextRequest) {
         recruiterEmailCc: data.recruiterEmailCc,
         emailSubjectPrefix: data.emailSubjectPrefix,
         expiresAt,
-        questionnaire: {
-          create: {
-            version: 1,
-            questions: {
-              create: data.questions.map((q) => ({
-                key: q.key,
-                label: q.label,
-                type: q.type,
-                required: q.required,
-                optionsJson: q.options ? JSON.stringify(q.options) : null,
-                orderIndex: q.orderIndex,
-              })),
-            },
-            gateRules: {
-              create: data.gateRules.map((r) => {
-                // Ensure value is properly serialized
-                let value = r.value
-                if (typeof value === 'string') {
-                  try {
-                    value = JSON.parse(value)
-                  } catch {
-                    // If not JSON, keep as string
+        ...(hasQuestions ? {
+          questionnaire: {
+            create: {
+              version: 1,
+              questions: {
+                create: data.questions.map((q) => ({
+                  key: q.key,
+                  label: q.label,
+                  type: q.type,
+                  required: q.required,
+                  optionsJson: q.options ? JSON.stringify(q.options) : null,
+                  orderIndex: q.orderIndex,
+                })),
+              },
+              gateRules: {
+                create: data.gateRules.map((r) => {
+                  // Ensure value is properly serialized
+                  let value = r.value
+                  if (typeof value === 'string') {
+                    try {
+                      value = JSON.parse(value)
+                    } catch {
+                      // If not JSON, keep as string
+                    }
                   }
-                }
-                return {
-                  questionKey: r.questionKey,
-                  operator: r.operator,
-                  valueJson: JSON.stringify(value),
-                  orderIndex: r.orderIndex,
-                }
-              }),
+                  return {
+                    questionKey: r.questionKey,
+                    operator: r.operator,
+                    valueJson: JSON.stringify(value),
+                    orderIndex: r.orderIndex,
+                  }
+                }),
+              },
             },
           },
-        },
+        } : {}),
       },
       include: {
         questionnaire: true,

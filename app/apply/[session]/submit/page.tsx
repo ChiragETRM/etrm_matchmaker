@@ -21,11 +21,39 @@ export default function SubmitApplicationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [sessionValid, setSessionValid] = useState<boolean | null>(null)
+  const [sessionError, setSessionError] = useState<string | null>(null)
   const session = params.session as string
 
   const { register, handleSubmit, formState: { errors } } = useForm()
   const [turnstileLoaded, setTurnstileLoaded] = useState(false)
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''
+
+  // Validate session status before showing form
+  useEffect(() => {
+    if (session) {
+      fetch(`/api/apply/${session}/status`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.status === 'PASSED') {
+            setSessionValid(true)
+          } else if (data.status === 'FAILED') {
+            setSessionError('Your application did not meet the minimum requirements for this role.')
+            setSessionValid(false)
+          } else if (data.status === 'IN_PROGRESS') {
+            setSessionError('Please complete the questionnaire before submitting your application.')
+            setSessionValid(false)
+          } else {
+            setSessionError(data.error || 'Invalid session.')
+            setSessionValid(false)
+          }
+        })
+        .catch(() => {
+          setSessionError('Unable to verify session. Please try again.')
+          setSessionValid(false)
+        })
+    }
+  }, [session])
 
   useEffect(() => {
     if (turnstileSiteKey) {
@@ -108,6 +136,31 @@ export default function SubmitApplicationPage() {
       }
       setResumeFile(file)
     }
+  }
+
+  if (sessionValid === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div>Loading...</div>
+      </div>
+    )
+  }
+
+  if (sessionValid === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+        <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow text-center">
+          <h1 className="text-2xl font-bold mb-4 text-gray-800">Unable to Submit</h1>
+          <p className="text-gray-600 mb-6">{sessionError}</p>
+          <a
+            href="/jobs"
+            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Browse Jobs
+          </a>
+        </div>
+      </div>
+    )
   }
 
   return (
