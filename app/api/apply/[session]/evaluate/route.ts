@@ -41,6 +41,7 @@ export async function POST(
     if (session.status !== 'IN_PROGRESS') {
       const existingAnswers = session.answersJson ? JSON.parse(session.answersJson) : {}
       const gateRules = session.job.questionnaire?.gateRules || []
+      const questions = session.job.questionnaire?.questions || []
       
       // Re-evaluate to get failed rules (in case they're needed)
       const evaluation = evaluateGates(
@@ -52,10 +53,23 @@ export async function POST(
         existingAnswers
       )
 
+      // Build detailed failure information with question labels
+      const failedDetails = evaluation.failedRuleDetails.map((detail) => {
+        const question = questions.find((q) => q.key === detail.questionKey)
+        return {
+          questionKey: detail.questionKey,
+          questionLabel: question?.label || detail.questionKey,
+          operator: detail.operator,
+          expectedValue: detail.expectedValue,
+          actualValue: detail.actualValue,
+        }
+      })
+
       return NextResponse.json({
         passed: session.status === 'PASSED',
         status: session.status,
         failedRules: evaluation.failedRules,
+        failedDetails,
       })
     }
 
@@ -65,6 +79,7 @@ export async function POST(
     }
 
     const gateRules = session.job.questionnaire?.gateRules || []
+    const questions = session.job.questionnaire?.questions || []
 
     // Evaluate gates
     const evaluation = evaluateGates(
@@ -87,10 +102,23 @@ export async function POST(
       },
     })
 
+    // Build detailed failure information with question labels
+    const failedDetails = evaluation.failedRuleDetails.map((detail) => {
+      const question = questions.find((q) => q.key === detail.questionKey)
+      return {
+        questionKey: detail.questionKey,
+        questionLabel: question?.label || detail.questionKey,
+        operator: detail.operator,
+        expectedValue: detail.expectedValue,
+        actualValue: detail.actualValue,
+      }
+    })
+
     return NextResponse.json({
       passed: evaluation.passed,
       status,
       failedRules: evaluation.failedRules,
+      failedDetails,
     })
   } catch (error) {
     console.error('Error evaluating application:', error)

@@ -12,11 +12,19 @@ interface Answers {
   [key: string]: any
 }
 
+export interface FailedRuleDetail {
+  questionKey: string
+  operator: Operator
+  expectedValue: any
+  actualValue: any
+}
+
 export function evaluateGates(
   rules: GateRule[],
   answers: Answers
-): { passed: boolean; failedRules: string[] } {
+): { passed: boolean; failedRules: string[]; failedRuleDetails: FailedRuleDetail[] } {
   const failedRules: string[] = []
+  const failedRuleDetails: FailedRuleDetail[] = []
 
   for (const rule of rules) {
     const answer = answers[rule.questionKey]
@@ -66,11 +74,18 @@ export function evaluateGates(
 
     if (!passed) {
       failedRules.push(rule.questionKey)
+      failedRuleDetails.push({
+        questionKey: rule.questionKey,
+        operator: rule.operator,
+        expectedValue,
+        actualValue: answer,
+      })
     }
   }
 
   return {
     passed: failedRules.length === 0,
     failedRules,
+    failedRuleDetails,
   }
 }
