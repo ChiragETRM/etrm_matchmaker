@@ -139,6 +139,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     updateAge: 24 * 60 * 60, // Update session every 24 hours
   },
   // Cookie configuration with proper domain handling
+  // Note: Let NextAuth handle PKCE cookies automatically to avoid parsing errors
   cookies: {
     sessionToken: {
       name: `${isProduction ? '__Secure-' : ''}next-auth.session-token`,
@@ -171,16 +172,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // __Host- requires exact domain match which can fail on Vercel preview deployments
       },
     },
-    pkceCodeVerifier: {
-      name: `${isProduction ? '__Secure-' : ''}next-auth.pkce.code_verifier`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: isProduction,
-        maxAge: 60 * 15, // 15 minutes
-      },
-    },
+    // Remove custom pkceCodeVerifier configuration - let NextAuth handle it automatically
+    // Custom configuration can cause parsing errors
     state: {
       name: `${isProduction ? '__Secure-' : ''}next-auth.state`,
       options: {

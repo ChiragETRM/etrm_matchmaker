@@ -49,8 +49,8 @@ function SignInContent() {
       clearAuthCookies()
       setIsClearingCookies(true)
       
-      // If it's a configuration error or other critical error, sign out first
-      if (error === 'Configuration' || error === 'AccessDenied') {
+      // If it's a configuration error, PKCE error, or other critical error, sign out first
+      if (error === 'Configuration' || error === 'AccessDenied' || error === 'PKCEError') {
         signOut({ redirect: false }).then(() => {
           // Clear cookies again after sign out
           setTimeout(() => {

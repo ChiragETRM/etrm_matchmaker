@@ -110,6 +110,21 @@ async function handleRequest(
         url.searchParams.set('details', encodeURIComponent(error.message))
         return NextResponse.redirect(url)
       }
+      
+      // Handle PKCE code verifier parsing errors
+      // This often happens when cookies are corrupted or not properly set
+      if (
+        errorMessage.includes('pkcecodeverifier') ||
+        errorMessage.includes('pkce') ||
+        errorMessage.includes('invalidcheck')
+      ) {
+        console.error('[NextAuth] PKCE error detected - this may be due to cookie issues')
+        // Clear cookies by redirecting to sign-in with a special parameter
+        const url = new URL('/auth/signin', req.url)
+        url.searchParams.set('error', 'PKCEError')
+        url.searchParams.set('details', 'Cookie parsing error. Please try again.')
+        return NextResponse.redirect(url)
+      }
     }
     
     // For other errors, redirect to sign-in with generic error
