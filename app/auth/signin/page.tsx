@@ -44,8 +44,9 @@ function SignInContent() {
   // Handle errors by clearing cookies and retrying
   useEffect(() => {
     if (error && !isClearingCookies) {
-      console.error('Authentication error:', error)
+      console.error('Authentication error:', error, errorDetails)
       // Clear cookies on error to fix stale session issues
+      // This is especially important for PKCE errors where cookies may be corrupted
       clearAuthCookies()
       setIsClearingCookies(true)
       
