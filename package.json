@@ -17,6 +17,8 @@
     "db:troubleshoot-push": "powershell -ExecutionPolicy Bypass -File scripts/troubleshoot-db-push.ps1",
     "db:sql-supabase": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/supabase-init.sql",
     "db:apply-nextauth-migration": "tsx scripts/apply-nextauth-migration.ts",
+    "db:apply-google-profile-migration": "tsx scripts/apply-google-profile-migration.ts",
+    "db:fix-auth-schema": "tsx scripts/fix-auth-schema.ts",
     "db:studio": "prisma studio",
     "seed:jobs": "tsx scripts/seed-jobs.ts"
   },

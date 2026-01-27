@@ -237,6 +237,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Update user with all available Google profile data
       if (account?.provider === 'google' && user?.id && profile) {
         try {
+          // First, check if the Google profile columns exist
+          const columnCheck = await prisma.$queryRaw<Array<{ column_name: string }>>`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' 
+            AND column_name IN ('given_name', 'family_name', 'locale', 'google_sub', 'profile_data')
+          `
+          const existingColumns = new Set(columnCheck.map(c => c.column_name))
+          const hasGoogleFields = existingColumns.has('given_name') && 
+                                  existingColumns.has('family_name') && 
+                                  existingColumns.has('locale') && 
+                                  existingColumns.has('google_sub') && 
+                                  existingColumns.has('profile_data')
+
           // Fetch current user to get existing emailVerified value
           const currentUser = await prisma.user.findUnique({
             where: { id: user.id },
@@ -256,25 +270,47 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             ...profile,
           })
 
+          // Build update data conditionally based on what columns exist
+          const updateData: any = {
+            // Update basic fields if they're missing or changed
+            name: profile.name || user.name || null,
+            image: profile.picture || user.image || null,
+            emailVerified: profile.email_verified 
+              ? new Date() 
+              : currentUser?.emailVerified || null,
+          }
+
+          // Only add Google profile fields if columns exist
+          if (hasGoogleFields) {
+            updateData.givenName = profile.given_name || null
+            updateData.familyName = profile.family_name || null
+            updateData.locale = profile.locale || null
+            updateData.googleSub = profile.sub || account.providerAccountId || null
+            updateData.profileData = profileDataJson
+          } else {
+            // Log warning but don't fail - migration may need to run
+            console.warn('[NextAuth] Google profile columns not found. Run migration to enable full profile storage.')
+          }
+
           await prisma.user.update({
             where: { id: user.id },
-            data: {
-              givenName: profile.given_name || null,
-              familyName: profile.family_name || null,
-              locale: profile.locale || null,
-              googleSub: profile.sub || account.providerAccountId || null,
-              profileData: profileDataJson,
-              // Update basic fields if they're missing or changed
-              name: profile.name || user.name || null,
-              image: profile.picture || user.image || null,
-              emailVerified: profile.email_verified 
-                ? new Date() 
-                : currentUser?.emailVerified || null,
-            },
+            data: updateData,
           })
         } catch (error) {
           // Log error but don't fail sign-in
-          console.error('[NextAuth] Error updating user profile data:', error)
+          // This is critical - we don't want missing columns to prevent login
+          if (error instanceof Error) {
+            // Check if it's a column missing error
+            if (error.message.includes('does not exist') || 
+                error.message.includes('column') && error.message.includes('not found')) {
+              console.error('[NextAuth] Database schema mismatch detected. Please run migration:', error.message)
+              console.error('[NextAuth] Run: npm run db:apply-google-profile-migration')
+            } else {
+              console.error('[NextAuth] Error updating user profile data:', error)
+            }
+          } else {
+            console.error('[NextAuth] Unknown error updating user profile data:', error)
+          }
         }
       }
     },
