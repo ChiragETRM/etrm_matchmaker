@@ -322,33 +322,42 @@ export default function CandidateDashboardPage() {
         {/* Saved Gate Answers Section */}
         {gateAnswers.length > 0 && (
           <div className="bg-white rounded-xl shadow p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Saved Application Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Saved Application Information</h3>
             <p className="text-sm text-gray-600 mb-4">
               The following information is saved and will be automatically used for 1-click apply. 
               You can update it when applying to new jobs.
             </p>
-            <div className="space-y-3">
-              {gateAnswers.map((ga) => (
-                <div key={ga.questionKey} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-medium text-gray-900 capitalize">
-                        {ga.questionKey.replace(/_/g, ' ')}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {Array.isArray(ga.answer)
-                          ? ga.answer.join(', ')
-                          : typeof ga.answer === 'boolean'
-                          ? ga.answer ? 'Yes' : 'No'
-                          : String(ga.answer)}
-                      </p>
+            <div className="space-y-2">
+              {gateAnswers.map((ga) => {
+                // Convert snake_case to readable labels
+                const label = ga.questionKey
+                  .split('_')
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ')
+                
+                // Format the value nicely
+                const displayValue = Array.isArray(ga.answer)
+                  ? ga.answer.join(', ')
+                  : typeof ga.answer === 'boolean'
+                  ? ga.answer ? 'Yes' : 'No'
+                  : String(ga.answer)
+                
+                return (
+                  <div key={ga.questionKey} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-700">{label}</span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          (Updated {new Date(ga.updatedAt).toLocaleDateString()})
+                        </span>
+                      </div>
+                      <span className="text-sm text-gray-900 font-semibold">
+                        {displayValue}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-500">
-                      Updated {new Date(ga.updatedAt).toLocaleDateString()}
-                    </span>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
@@ -363,71 +372,111 @@ export default function CandidateDashboardPage() {
               applications.map((a) => (
                 <div
                   key={a.id}
-                  className="bg-white rounded-xl shadow p-6"
+                  className="bg-white rounded-xl shadow p-6 hover:shadow-md transition-shadow"
                 >
-                  <div className="flex flex-wrap justify-between gap-4 mb-4">
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-1">
                         {a.job?.title ?? 'Unknown job'}
                       </h2>
                       {a.job?.companyName && (
-                        <p className="text-gray-600 text-sm">{a.job.companyName}</p>
+                        <p className="text-gray-600 mb-2">{a.job.companyName}</p>
                       )}
+                      <p className="text-sm text-gray-500">
+                        Applied on {new Date(a.createdAt).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric'
+                        })}
+                      </p>
                     </div>
                     <span
-                      className={`text-sm font-medium px-3 py-1 rounded-full ${
-                        a.recruiterStatus === 'SHORTLISTED'
+                      className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ml-4 ${
+                        a.recruiterStatus === 'ACCEPTED'
                           ? 'bg-green-100 text-green-800'
-                          : a.recruiterStatus === 'DISCARDED'
-                          ? 'bg-gray-100 text-gray-600'
-                          : 'bg-amber-100 text-amber-800'
+                          : a.recruiterStatus === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
                       }`}
                     >
-                      {a.recruiterStatus}
+                      {a.recruiterStatus || 'PENDING'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Applied {new Date(a.createdAt).toLocaleDateString()}
-                  </p>
-                  {a.job?.link && (
-                    <a
-                      href={a.job.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-indigo-600 hover:underline text-sm"
-                    >
-                      View job →
-                    </a>
-                  )}
-                  {a.resumeUrl && (
-                    <p className="mt-2">
+                  
+                  <div className="flex flex-wrap items-center gap-3 mb-4 pt-4 border-t border-gray-200">
+                    {a.job?.link && (
+                      <a
+                        href={a.job.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-600 hover:text-indigo-700 hover:underline text-sm font-medium flex items-center gap-1"
+                      >
+                        <span>View Job Posting</span>
+                        <span>→</span>
+                      </a>
+                    )}
+                    {a.resumeUrl && (
                       <a
                         href={a.resumeUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-indigo-600 hover:underline text-sm"
+                        className="text-indigo-600 hover:text-indigo-700 hover:underline text-sm font-medium flex items-center gap-1"
                       >
-                        Your CV
+                        <span>View Your CV</span>
+                        <span>→</span>
                       </a>
-                    </p>
-                  )}
+                    )}
+                  </div>
                   <details className="mt-4">
-                    <summary className="text-sm font-medium text-gray-700 cursor-pointer">
-                      Questionnaire answers
+                    <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors flex items-center gap-2">
+                      <span className="text-indigo-600">▼</span>
+                      Questionnaire Answers
                     </summary>
-                    <div className="mt-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
-                      <pre className="whitespace-pre-wrap font-sans">
-                        {(() => {
-                          try {
-                            const o = JSON.parse(a.answersJson)
-                            return Object.entries(o)
-                              .map(([k, v]) => `${k}: ${Array.isArray(v) ? (v as string[]).join(', ') : String(v)}`)
-                              .join('\n')
-                          } catch {
-                            return a.answersJson
-                          }
-                        })()}
-                      </pre>
+                    <div className="mt-3 space-y-2">
+                      {(() => {
+                        try {
+                          const answers = JSON.parse(a.answersJson)
+                          return Object.entries(answers).map(([key, value]) => {
+                            // Convert snake_case to readable labels
+                            const label = key
+                              .split('_')
+                              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(' ')
+                            
+                            // Format the value nicely
+                            let displayValue: string
+                            if (Array.isArray(value)) {
+                              displayValue = value.join(', ')
+                            } else if (typeof value === 'boolean') {
+                              displayValue = value ? 'Yes' : 'No'
+                            } else {
+                              displayValue = String(value)
+                            }
+                            
+                            return (
+                              <div
+                                key={key}
+                                className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {label}
+                                  </span>
+                                  <span className="text-sm text-gray-900 font-semibold">
+                                    {displayValue}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })
+                        } catch {
+                          return (
+                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <p className="text-sm text-gray-600">{a.answersJson}</p>
+                            </div>
+                          )
+                        }
+                      })()}
                     </div>
                   </details>
                 </div>
