@@ -479,12 +479,56 @@ export default function CandidateDashboardPage() {
                     </div>
                   )}
                   {q.type === 'NUMBER' && (
-                    <input
-                      type="number"
-                      value={skillsFormValues[q.key] || ''}
-                      onChange={(e) => setSkillsFormValues({ ...skillsFormValues, [q.key]: e.target.value ? Number(e.target.value) : '' })}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = Number(skillsFormValues[q.key] || 0)
+                          const newValue = Math.max(0, current - 1)
+                          setSkillsFormValues({ ...skillsFormValues, [q.key]: newValue })
+                        }}
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-indigo-400 active:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg"
+                        aria-label="Decrease"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={skillsFormValues[q.key] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          if (val === '') {
+                            setSkillsFormValues({ ...skillsFormValues, [q.key]: '' })
+                            return
+                          }
+                          const num = Number(val)
+                          if (!isNaN(num) && num >= 0) {
+                            setSkillsFormValues({ ...skillsFormValues, [q.key]: num })
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const val = e.target.value
+                          if (val === '' || Number(val) < 0) {
+                            setSkillsFormValues({ ...skillsFormValues, [q.key]: 0 })
+                          }
+                        }}
+                        className="w-24 text-center border-2 border-gray-300 rounded-lg px-3 py-2 text-base font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                        placeholder="0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = Number(skillsFormValues[q.key] || 0)
+                          setSkillsFormValues({ ...skillsFormValues, [q.key]: current + 1 })
+                        }}
+                        className="flex items-center justify-center w-10 h-10 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-indigo-400 active:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg"
+                        aria-label="Increase"
+                      >
+                        +
+                      </button>
+                    </div>
                   )}
                   {q.type === 'COUNTRY' && (
                     <input
