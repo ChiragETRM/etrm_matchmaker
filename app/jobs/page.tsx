@@ -667,12 +667,6 @@ function JobsContent() {
                     </div>
 
                     <div className="flex gap-4">
-                      <Link
-                        href={`/apply/start/${selectedJob.id}`}
-                        className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold text-center"
-                      >
-                        Apply Now
-                      </Link>
                       <button
                         onClick={async () => {
                           if (!selectedJob) return
@@ -725,6 +719,12 @@ function JobsContent() {
                       >
                         {oneClickLoading ? 'Processing...' : '1 Click Apply'}
                       </button>
+                      <Link
+                        href={`/apply/start/${selectedJob.id}`}
+                        className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold text-center"
+                      >
+                        Apply Now
+                      </Link>
                     </div>
 
                     <GateAnswerModal
