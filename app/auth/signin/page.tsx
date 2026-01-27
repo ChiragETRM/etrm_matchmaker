@@ -1,9 +1,36 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { signIn, useSession } from 'next-auth/react'
+import { signIn, useSession, signOut } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
+
+// Function to clear NextAuth cookies
+function clearAuthCookies() {
+  const cookiesToClear = [
+    'next-auth.session-token',
+    '__Secure-next-auth.session-token',
+    'next-auth.callback-url',
+    '__Secure-next-auth.callback-url',
+    'next-auth.csrf-token',
+    '__Host-next-auth.csrf-token',
+    'next-auth.pkce.code_verifier',
+    '__Secure-next-auth.pkce.code_verifier',
+    'next-auth.state',
+    '__Secure-next-auth.state',
+  ]
+
+  cookiesToClear.forEach((cookieName) => {
+    // Clear with different path variations
+    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth;`
+    // Clear with domain variations (for production)
+    if (window.location.hostname !== 'localhost') {
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`
+    }
+  })
+}
 
 function SignInContent() {
   const searchParams = useSearchParams()
@@ -11,6 +38,30 @@ function SignInContent() {
   const { data: session, status } = useSession()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const error = searchParams.get('error')
+  const errorDetails = searchParams.get('details')
+  const [isClearingCookies, setIsClearingCookies] = useState(false)
+
+  // Handle errors by clearing cookies and retrying
+  useEffect(() => {
+    if (error && !isClearingCookies) {
+      console.error('Authentication error:', error)
+      // Clear cookies on error to fix stale session issues
+      clearAuthCookies()
+      setIsClearingCookies(true)
+      
+      // If it's a configuration error or other critical error, sign out first
+      if (error === 'Configuration' || error === 'AccessDenied') {
+        signOut({ redirect: false }).then(() => {
+          // Clear cookies again after sign out
+          setTimeout(() => {
+            clearAuthCookies()
+            // Reload page to start fresh
+            window.location.href = '/auth/signin'
+          }, 100)
+        })
+      }
+    }
+  }, [error, isClearingCookies])
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
@@ -43,6 +94,25 @@ function SignInContent() {
       router.push(decodedUrl)
     }
   }, [status, session, callbackUrl, router])
+
+  const handleSignIn = async () => {
+    // Clear any stale cookies before signing in
+    clearAuthCookies()
+    setIsClearingCookies(true)
+    
+    try {
+      await signIn('google', { 
+        callbackUrl,
+        redirect: true,
+      })
+    } catch (err) {
+      console.error('Sign in error:', err)
+      // Clear cookies on error
+      clearAuthCookies()
+      // Reload page
+      window.location.href = '/auth/signin?error=SignInError'
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -78,18 +148,53 @@ function SignInContent() {
         <div className="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">
+              <p className="text-sm text-red-600 mb-2 font-medium">
                 {error === 'OAuthAccountNotLinked'
                   ? 'This email is already associated with another account.'
+                  : error === 'Configuration'
+                  ? 'Authentication configuration error. Please try again after clearing your browser cookies.'
+                  : error === 'AccessDenied'
+                  ? 'Access denied. Please try again.'
+                  : error === 'Verification'
+                  ? 'Verification error. Please try again.'
                   : 'An error occurred during sign in. Please try again.'}
               </p>
+              {errorDetails && (
+                <p className="text-xs text-red-500 mb-2 mt-1 font-mono break-all">
+                  {decodeURIComponent(errorDetails)}
+                </p>
+              )}
+              {error === 'Configuration' && (
+                <div className="mt-3 space-y-2">
+                  <button
+                    onClick={() => {
+                      clearAuthCookies()
+                      signOut({ redirect: false }).then(() => {
+                        window.location.href = '/auth/signin'
+                      })
+                    }}
+                    className="text-xs text-red-600 underline hover:text-red-800 mr-4"
+                  >
+                    Clear cookies and retry
+                  </button>
+                  <a
+                    href="/api/auth/health"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-red-600 underline hover:text-red-800"
+                  >
+                    Check configuration
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
           <div className="space-y-4">
             <button
-              onClick={() => signIn('google', { callbackUrl })}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700"
+              onClick={handleSignIn}
+              disabled={isClearingCookies || status === 'loading'}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
