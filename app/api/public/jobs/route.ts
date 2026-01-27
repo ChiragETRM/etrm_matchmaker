@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {
       expiresAt: { gt: now },
       status: 'ACTIVE',
+      archived: false,
     }
 
     if (remotePolicy) {

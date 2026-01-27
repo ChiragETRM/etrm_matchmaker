@@ -15,6 +15,7 @@ export async function GET() {
       where: {
         expiresAt: { gt: now },
         status: 'ACTIVE',
+        archived: false,
       },
       include: {
         questionnaire: {

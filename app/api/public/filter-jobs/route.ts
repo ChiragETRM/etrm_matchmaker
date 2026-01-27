@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
       where: {
         expiresAt: { gt: now },
         status: 'ACTIVE',
+        archived: false,
       },
       include: {
         questionnaire: {

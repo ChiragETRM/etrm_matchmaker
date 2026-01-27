@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       roleCategory: j.roleCategory,
       link: `${baseUrl}/jobs/${j.slug}`,
       createdAt: j.createdAt,
+      archived: j.archived,
       applications: j.applications.map((a) => ({
         id: a.id,
         candidateName: a.candidateName,

@@ -93,6 +93,7 @@ model Job {
   createdAt             DateTime  @default(now()) @map("created_at")
   expiresAt             DateTime  @map("expires_at")
   status                String    @default("ACTIVE") // ACTIVE | EXPIRED
+  archived              Boolean   @default(false) @map("archived")
 
   questionnaire         Questionnaire?
   applicationSessions   ApplicationSession[]
@@ -102,6 +103,7 @@ model Job {
   @@index([expiresAt])
   @@index([status])
   @@index([recruiterEmailTo])
+  @@index([archived])
   @@map("jobs")
 }
 

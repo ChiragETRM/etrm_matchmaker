@@ -32,6 +32,10 @@ export async function GET(
       return NextResponse.json({ error: 'Job has expired' }, { status: 410 })
     }
 
+    if (job.archived) {
+      return NextResponse.json({ error: 'Job has been archived' }, { status: 410 })
+    }
+
     // Return job without sensitive info
     const { recruiterEmailTo, recruiterEmailCc, ...publicJob } = job
 
