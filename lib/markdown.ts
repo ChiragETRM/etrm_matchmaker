@@ -29,7 +29,8 @@ export function renderSimpleMarkdown(text: string): string {
   let inList = false
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].trim()
+    // Normalize multiple spaces to single space, then trim
+    let line = lines[i].replace(/\s+/g, ' ').trim()
 
     // Handle bold text
     line = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')

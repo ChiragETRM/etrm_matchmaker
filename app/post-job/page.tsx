@@ -107,12 +107,7 @@ export default function PostJobPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [budgetValue, setBudgetValue] = useState(150)
 
-  // Redirect to signin if not authenticated
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin?callbackUrl=/post-job')
-    }
-  }, [status, router])
+  // No auth required - allow posting jobs without signing in
 
   const { register, handleSubmit, control, watch, setValue } = useForm({
     defaultValues: {
@@ -136,7 +131,7 @@ export default function PostJobPage() {
     },
   })
 
-  // Set recruiter email from session when authenticated
+  // Set recruiter email from session when authenticated (optional)
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
       setValue('recruiterEmailTo', session.user.email)
@@ -316,14 +311,7 @@ export default function PostJobPage() {
     }
   }
 
-  // Show loading while checking auth
-  if (status === 'loading' || status === 'unauthenticated') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    )
-  }
+  // No auth required - show form immediately
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12 px-4">

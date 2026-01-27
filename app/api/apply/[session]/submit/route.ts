@@ -213,7 +213,14 @@ export async function POST(
         ` : ''}
       `
 
-      emailResult = await sendEmail({
+      console.log('Attempting to send email to recruiter:', {
+        to: session.job.recruiterEmailTo,
+        cc: session.job.recruiterEmailCc,
+        subject,
+        hasAttachment: !!resume.name,
+      })
+
+      const emailResponse = await sendEmail({
         to: session.job.recruiterEmailTo,
         cc: session.job.recruiterEmailCc,
         subject,
@@ -226,6 +233,19 @@ export async function POST(
           },
         ],
       })
+      
+      console.log('Email send response:', {
+        success: emailResponse.success,
+        messageId: emailResponse.messageId,
+        error: emailResponse.error,
+      })
+      
+      // Map response to expected format
+      emailResult = {
+        success: emailResponse.success,
+        messageId: emailResponse.messageId,
+        error: emailResponse.error,
+      }
     } catch (emailError) {
       console.error('Email sending error (application was saved successfully):', emailError)
       emailResult = {
