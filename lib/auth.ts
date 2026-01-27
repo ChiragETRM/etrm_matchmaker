@@ -199,8 +199,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account, isNewUser }) {
       // Log successful sign-ins (optional)
     },
-    async signOut({ session }) {
+    async signOut() {
       // Clean up on sign out (optional)
+      // Note: NextAuth v5 signOut event doesn't provide session parameter
     },
   },
 })
