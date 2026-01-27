@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionToken = randomBytes(32).toString('hex')
-    const hasQuestionnaire = !!job.questionnaire
+    const hasQuestionnaire = !!job.questionnaire && job.questionnaire.questions.length > 0
 
     const session = await prisma.applicationSession.create({
       data: {

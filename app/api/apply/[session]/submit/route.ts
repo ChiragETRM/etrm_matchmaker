@@ -97,8 +97,9 @@ export async function POST(
     }
 
     if (session.status !== 'PASSED') {
+      console.error(`Submit rejected: session ${params.session} has status '${session.status}', expected 'PASSED'`)
       return NextResponse.json(
-        { error: 'Application must pass gates before submission' },
+        { error: `Application session is not eligible for submission (status: ${session.status})` },
         { status: 400 }
       )
     }
