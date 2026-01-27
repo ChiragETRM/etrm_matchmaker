@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
           }
         : null,
       resumeUrl: a.resumeFileId
-        ? `${baseUrl}/api/files/${a.resumeFileId}`
+        ? `${baseUrl}/api/files/${a.resumeFileId}/download`
         : null,
     }))
 
