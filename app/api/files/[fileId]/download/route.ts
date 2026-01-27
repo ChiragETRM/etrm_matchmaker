@@ -66,7 +66,37 @@ export async function GET(
       )
     }
 
-    // LOCAL provider - file not actually stored
+    // LOCAL provider - retrieve file data from database
+    if (provider === 'LOCAL') {
+      if (!fileObject.data) {
+        return NextResponse.json(
+          { error: 'File data not found in database' },
+          { status: 404 }
+        )
+      }
+
+      try {
+        // Convert base64 data back to buffer
+        const fileBuffer = Buffer.from(fileObject.data, 'base64')
+        const fileName = fileObject.path.split('/').pop() || 'download'
+
+        return new NextResponse(fileBuffer, {
+          headers: {
+            'Content-Type': fileObject.mimeType || 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+            'Content-Length': fileObject.sizeBytes.toString(),
+          },
+        })
+      } catch (error) {
+        console.error('Error decoding file data:', error)
+        return NextResponse.json(
+          { error: 'Failed to decode file data' },
+          { status: 500 }
+        )
+      }
+    }
+
+    // Unknown provider
     return NextResponse.json(
       { error: 'File storage not configured. Files are not actually stored in LOCAL mode.' },
       { status: 501 }

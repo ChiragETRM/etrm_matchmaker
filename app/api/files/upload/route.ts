@@ -18,10 +18,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For MVP, we'll store file metadata and return a placeholder
+    // For MVP, we'll store file metadata and data in database
     // In production, upload to S3/R2/Supabase and store the actual path
     const buffer = await file.arrayBuffer()
     const checksum = randomBytes(16).toString('hex')
+    
+    // Convert buffer to base64 for storage
+    const base64Data = Buffer.from(buffer).toString('base64')
 
     const fileObject = await prisma.fileObject.create({
       data: {
@@ -30,11 +33,9 @@ export async function POST(request: NextRequest) {
         mimeType: file.type,
         sizeBytes: buffer.byteLength,
         checksum,
+        data: base64Data,
       },
     })
-
-    // In production, upload the actual file here
-    // For now, we'll just return the file ID
 
     return NextResponse.json({
       fileId: fileObject.id,

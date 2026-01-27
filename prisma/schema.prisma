@@ -193,11 +193,12 @@ model Application {
 
 model FileObject {
   id          String   @id @default(cuid())
-  provider    String   // S3 | R2 | SUPABASE
+  provider    String   // S3 | R2 | SUPABASE | LOCAL
   path        String
   mimeType    String   @map("mime_type")
   sizeBytes   Int      @map("size_bytes")
   checksum    String?
+  data        String?  @db.Text // Base64 encoded file data for LOCAL provider
   createdAt   DateTime @default(now()) @map("created_at")
 
   applications Application[]

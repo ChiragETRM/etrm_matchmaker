@@ -57,11 +57,14 @@ async function uploadToLocal(
   file: File,
   folder: string
 ): Promise<UploadResult> {
-  // Store file metadata in database
+  // Store file metadata and data in database
   // In production, the actual file bytes would be stored in cloud storage
   const buffer = await file.arrayBuffer()
   const checksum = randomBytes(16).toString('hex')
   const path = `${folder}/${Date.now()}-${file.name}`
+  
+  // Convert buffer to base64 for storage
+  const base64Data = Buffer.from(buffer).toString('base64')
 
   const fileObject = await prisma.fileObject.create({
     data: {
@@ -70,6 +73,7 @@ async function uploadToLocal(
       mimeType: file.type,
       sizeBytes: buffer.byteLength,
       checksum,
+      data: base64Data,
     },
   })
 
