@@ -12,6 +12,11 @@ The login fails with error: `Invalid code verifier` or `invalid_grant: Invalid c
 
 This happens when the PKCE (Proof Key for Code Exchange) code verifier cookie is not properly stored, retrieved, or matches the code challenge sent to Google OAuth.
 
+### 3. State Cookie Parsing Error
+The login fails with error: `InvalidCheck: state value could not be parsed.`
+
+This happens when the state cookie (used for CSRF protection) is corrupted, expired, or cannot be decrypted properly. This can occur when cookies are cleared between the authorization request and callback, or when the AUTH_SECRET changes.
+
 ## Solution
 
 ### Quick Fix (Recommended)
@@ -175,6 +180,13 @@ The PKCE code verifier cookie is now explicitly configured to prevent "Invalid c
 - Check that `AUTH_URL` or `NEXTAUTH_URL` is set correctly
 - Ensure cookies are not being blocked by browser settings
 - Check that you're using HTTPS in production (required for secure cookies)
+
+**Issue: "state value could not be parsed" error**
+- Clear browser cookies and try again (the sign-in page does this automatically)
+- Ensure `AUTH_SECRET` is set and consistent across all instances
+- Check that cookies are not being blocked or cleared by browser extensions
+- Verify that the state cookie is not expired (maxAge: 15 minutes)
+- If using multiple server instances, ensure they all use the same `AUTH_SECRET`
 
 ### Scripts Reference
 
