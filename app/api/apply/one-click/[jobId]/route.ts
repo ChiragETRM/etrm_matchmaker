@@ -63,6 +63,21 @@ export async function POST(
       return NextResponse.json({ error: 'Job has expired' }, { status: 410 })
     }
 
+    // Check if candidate already applied to this job - do this early to avoid unnecessary processing
+    const existingApplication = await prisma.application.findFirst({
+      where: {
+        jobId: job.id,
+        candidateEmail: email,
+      },
+    })
+
+    if (existingApplication) {
+      return NextResponse.json(
+        { error: 'You have already applied to this job.' },
+        { status: 400 }
+      )
+    }
+
     // Get candidate data from their most recent application or profile
     const latestApplication = await prisma.application.findFirst({
       where: { candidateEmail: email },
@@ -212,21 +227,6 @@ export async function POST(
           )
         }
       }
-    }
-
-    // Check if candidate already applied to this job
-    const existingApplication = await prisma.application.findFirst({
-      where: {
-        jobId: job.id,
-        candidateEmail: email,
-      },
-    })
-
-    if (existingApplication) {
-      return NextResponse.json(
-        { error: 'You have already applied to this job.' },
-        { status: 400 }
-      )
     }
 
     // Get final answers (either from provided, saved, or empty if no gates)
