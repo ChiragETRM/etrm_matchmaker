@@ -242,7 +242,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Fetch current user to get existing emailVerified value
           const currentUser = await prisma.user.findUnique({
             where: { id: user.id },
-            select: { emailVerified: true },
+            select: { emailVerified: true, jobAlertPolicyAgreed: true },
           })
 
           const profileDataJson = JSON.stringify({
@@ -258,6 +258,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             ...profile,
           })
 
+          // Check if policy agreement should be set (will be handled by API endpoint after redirect)
+          // For now, we'll update the user profile data
           await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -272,6 +274,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               emailVerified: profile.email_verified 
                 ? new Date() 
                 : currentUser?.emailVerified || null,
+              // Don't update jobAlertPolicyAgreed here - it will be set via API endpoint
             },
           })
         } catch (error) {

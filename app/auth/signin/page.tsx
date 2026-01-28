@@ -40,6 +40,7 @@ function SignInContent() {
   const error = searchParams.get('error')
   const errorDetails = searchParams.get('details')
   const [isClearingCookies, setIsClearingCookies] = useState(false)
+  const [jobAlertPolicyAgreed, setJobAlertPolicyAgreed] = useState(false)
 
   // Handle errors by clearing cookies and retrying
   useEffect(() => {
@@ -66,6 +67,24 @@ function SignInContent() {
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
+      // Check if job alert policy agreement needs to be saved
+      const savePolicyAgreement = async () => {
+        const policyAgreed = searchParams.get('jobAlertPolicyAgreed') === 'true' || 
+                            sessionStorage.getItem('jobAlertPolicyAgreed') === 'true'
+        
+        if (policyAgreed) {
+          try {
+            await fetch('/api/auth/job-alert-policy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            })
+            sessionStorage.removeItem('jobAlertPolicyAgreed')
+          } catch (error) {
+            console.error('Error saving job alert policy agreement:', error)
+          }
+        }
+      }
+
       // Decode the callbackUrl in case it's URL-encoded
       let decodedUrl = callbackUrl
       try {
@@ -80,6 +99,10 @@ function SignInContent() {
         // Only use the pathname if it's the same origin
         if (urlObj.origin === window.location.origin) {
           decodedUrl = urlObj.pathname + urlObj.search
+          // Remove jobAlertPolicyAgreed from query params before redirecting
+          const url = new URL(decodedUrl, window.location.origin)
+          url.searchParams.delete('jobAlertPolicyAgreed')
+          decodedUrl = url.pathname + url.search
         } else {
           // Different origin - default to dashboard for safety
           decodedUrl = '/dashboard'
@@ -91,19 +114,30 @@ function SignInContent() {
         }
       }
 
-      // Use router.push for client-side navigation
-      router.push(decodedUrl)
+      // Save policy agreement and then redirect
+      savePolicyAgreement().then(() => {
+        // Use router.push for client-side navigation
+        router.push(decodedUrl)
+      })
     }
-  }, [status, session, callbackUrl, router])
+  }, [status, session, callbackUrl, router, searchParams])
 
   const handleSignIn = async () => {
+    if (!jobAlertPolicyAgreed) {
+      alert('Please agree to receive job alerts from our platform to continue.')
+      return
+    }
+
     // Clear any stale cookies before signing in
     clearAuthCookies()
     setIsClearingCookies(true)
     
     try {
+      // Store the policy agreement in sessionStorage to pass to the callback
+      sessionStorage.setItem('jobAlertPolicyAgreed', 'true')
+      
       await signIn('google', { 
-        callbackUrl,
+        callbackUrl: `${callbackUrl}?jobAlertPolicyAgreed=true`,
         redirect: true,
       })
     } catch (err) {
@@ -194,9 +228,29 @@ function SignInContent() {
           )}
 
           <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={jobAlertPolicyAgreed}
+                  onChange={(e) => setJobAlertPolicyAgreed(e.target.checked)}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  required
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-900">
+                    I agree to receive job alerts from this platform
+                  </span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    By signing in, you consent to receive email notifications about new job opportunities that match your profile and preferences.
+                  </p>
+                </div>
+              </label>
+            </div>
+            
             <button
               onClick={handleSignIn}
-              disabled={isClearingCookies}
+              disabled={isClearingCookies || !jobAlertPolicyAgreed}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">

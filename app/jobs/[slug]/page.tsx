@@ -238,6 +238,9 @@ export default function JobDetailPage() {
   const [showGateModal, setShowGateModal] = useState(false)
   const [gateQuestions, setGateQuestions] = useState<Question[]>([])
   const [prefillAnswers, setPrefillAnswers] = useState<Record<string, any>>({})
+  const [jobAlertEmail, setJobAlertEmail] = useState('')
+  const [jobAlertLoading, setJobAlertLoading] = useState(false)
+  const [jobAlertSuccess, setJobAlertSuccess] = useState(false)
 
   useEffect(() => {
     if (params.slug) {
@@ -348,6 +351,36 @@ export default function JobDetailPage() {
     }
   }
 
+  const handleJobAlertSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!jobAlertEmail || jobAlertLoading) return
+
+    setJobAlertLoading(true)
+    setJobAlertSuccess(false)
+    try {
+      const response = await fetch('/api/public/job-alerts/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: jobAlertEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setJobAlertSuccess(true)
+        setJobAlertEmail('')
+        setTimeout(() => setJobAlertSuccess(false), 5000)
+      } else {
+        alert(data.error || 'Failed to subscribe. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error subscribing to job alerts:', error)
+      alert('An error occurred. Please try again.')
+    } finally {
+      setJobAlertLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -443,6 +476,42 @@ export default function JobDetailPage() {
               }}
             />
           </div>
+
+          {status === 'unauthenticated' && (
+            <div className="border-t pt-6 mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Get Job Alert Emails
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Stay updated with the latest job opportunities matching your preferences.
+                </p>
+                {jobAlertSuccess ? (
+                  <div className="text-green-600 text-sm font-medium">
+                    ✓ Successfully subscribed! You'll receive job alerts via email.
+                  </div>
+                ) : (
+                  <form onSubmit={handleJobAlertSubmit} className="flex gap-2">
+                    <input
+                      type="email"
+                      value={jobAlertEmail}
+                      onChange={(e) => setJobAlertEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      required
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={jobAlertLoading}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {jobAlertLoading ? 'Subscribing...' : 'Subscribe'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="border-t pt-6">
             <div className="flex gap-4">
