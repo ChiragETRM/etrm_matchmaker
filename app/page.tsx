@@ -48,28 +48,44 @@ export default function Home() {
                 <p className="text-gray-600 leading-relaxed mb-4">
                   Post ETRM-focused jobs. No accounts needed.
                 </p>
-                <ul className="space-y-3 mb-6">
-                  <li>
-                    <h4 className="font-semibold text-gray-900 mb-1">
-                      • No ATS pain, no setup cost
+                <ul className="space-y-4 mb-6 border-t border-gray-100 pt-4">
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      1. Zero noise, only qualified profiles
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Candidates are screened on ETRM skills before CV submission. You see only people who meet your minimum bar.
+                    </p>
+                  </li>
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      2. Built specifically for ETRM roles
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Endur, Allegro, RightAngle, commodities, markets, modules — all first-class fields, not afterthoughts.
+                    </p>
+                  </li>
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      3. No ATS pain, no setup cost
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
                       Post a job, define requirements, receive shortlisted candidates by email. No tools to learn.
                     </p>
                   </li>
-                  <li>
-                    <h4 className="font-semibold text-gray-900 mb-1">
-                      • Faster hiring decisions
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      4. Faster hiring decisions
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 leading-relaxed">
                       Every CV comes with structured answers to your key questions. Less guessing, fewer calls.
                     </p>
                   </li>
-                  <li>
-                    <h4 className="font-semibold text-gray-900 mb-1">
-                      • Clean, time-boxed postings
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      5. Clean, time-boxed postings
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 leading-relaxed">
                       Jobs auto-expire in 30 days. No stale roles, no clutter, no awkward takedowns.
                     </p>
                   </li>
@@ -120,9 +136,51 @@ export default function Home() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   For Candidates
                 </h2>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed mb-4">
                   Browse curated ETRM opportunities. Complete quick questionnaires and apply directly to roles that match your skills.
                 </p>
+                <ul className="space-y-4 mb-6 border-t border-gray-100 pt-4">
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      1. No wasted applications
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      If you don&apos;t meet the requirements, you find out immediately. If you do, your CV goes straight to the recruiter.
+                    </p>
+                  </li>
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      2. Real ETRM jobs, properly described
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Clear systems, commodities, seniority, and expectations. No vague &quot;finance tech&quot; nonsense.
+                    </p>
+                  </li>
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      3. No account creation mandatory
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Browse jobs, answer questions, upload CV. That&apos;s it.
+                    </p>
+                  </li>
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      4. Fair screening, skill-first
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Everyone answers the same questions. You&apos;re judged on experience, not buzzwords or CV styling.
+                    </p>
+                  </li>
+                  <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
+                    <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
+                      5. Faster responses, less ghosting
+                    </h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Recruiters only see qualified candidates, so they actually respond.
+                    </p>
+                  </li>
+                </ul>
               </div>
               <div className="flex items-center text-indigo-600 font-semibold group-hover:translate-x-2 transition-transform duration-300">
                 Browse Jobs
@@ -167,27 +225,43 @@ export default function Home() {
               For Recruiters — reasons to post here
             </h3>
             <div className="space-y-5">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
-                  • No ATS pain, no setup cost
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
+                  1. Zero noise, only qualified profiles
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Candidates are screened on ETRM skills before CV submission. You see only people who meet your minimum bar.
+                </p>
+              </div>
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
+                  2. Built specifically for ETRM roles
+                </h4>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Endur, Allegro, RightAngle, commodities, markets, modules — all first-class fields, not afterthoughts.
+                </p>
+              </div>
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
+                  3. No ATS pain, no setup cost
+                </h4>
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Post a job, define requirements, receive shortlisted candidates by email. No tools to learn.
                 </p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
-                  • Faster hiring decisions
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
+                  4. Faster hiring decisions
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Every CV comes with structured answers to your key questions. Less guessing, fewer calls.
                 </p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
-                  • Clean, time-boxed postings
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
+                  5. Clean, time-boxed postings
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Jobs auto-expire in 30 days. No stale roles, no clutter, no awkward takedowns.
                 </p>
               </div>
@@ -212,46 +286,46 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              For Candidates — 5 reasons to apply here
+              For Candidates — reasons to apply here
             </h3>
             <div className="space-y-5">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
                   1. No wasted applications
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   If you don&apos;t meet the requirements, you find out immediately. If you do, your CV goes straight to the recruiter.
                 </p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
                   2. Real ETRM jobs, properly described
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Clear systems, commodities, seniority, and expectations. No vague &quot;finance tech&quot; nonsense.
                 </p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
-                  3. No account creation
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
+                  3. No account creation mandatory
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Browse jobs, answer questions, upload CV. That&apos;s it.
                 </p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
                   4. Fair screening, skill-first
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Everyone answers the same questions. You&apos;re judged on experience, not buzzwords or CV styling.
                 </p>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
+              <div className="pb-4 border-b border-gray-100 last:border-b-0 last:pb-0">
+                <h4 className="font-semibold text-gray-900 mb-2 text-base">
                   5. Faster responses, less ghosting
                 </h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 leading-relaxed">
                   Recruiters only see qualified candidates, so they actually respond.
                 </p>
               </div>
