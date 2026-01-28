@@ -269,19 +269,19 @@ export default function CandidateDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
       <div className="max-w-3xl mx-auto">
         <Link href="/dashboard" className="text-indigo-600 hover:underline mb-6 inline-block">
           ← Dashboards
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Candidate dashboard</h1>
-        <p className="text-gray-600 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Candidate dashboard</h1>
+        <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base">
           View your applications and activity. Showing applications for{' '}
           <strong>{email}</strong>.
         </p>
 
-        <div className="bg-white rounded-xl shadow p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-xl shadow p-4 sm:p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               {session?.user?.image && (
                 <img

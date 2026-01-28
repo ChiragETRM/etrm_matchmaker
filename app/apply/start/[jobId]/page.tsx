@@ -163,9 +163,9 @@ export default function ApplyPage() {
   const progress = ((currentIndex + 1) / questions.length) * 100
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white p-8 rounded-lg shadow">
+        <div className="bg-white p-4 sm:p-8 rounded-lg shadow">
           <div className="mb-6">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
               <span>Question {currentIndex + 1} of {questions.length}</span>

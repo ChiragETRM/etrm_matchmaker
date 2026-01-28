@@ -116,19 +116,19 @@ export default function RecruiterDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <Link href="/dashboard" className="text-indigo-600 hover:underline mb-6 inline-block">
           ← Dashboards
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Recruiter dashboard</h1>
-        <p className="text-gray-600 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Recruiter dashboard</h1>
+        <p className="text-gray-600 mb-6 sm:mb-8 text-sm sm:text-base">
           View your job postings and manage candidates. Showing jobs for{' '}
           <strong>{email}</strong>.
         </p>
 
-        <div className="bg-white rounded-xl shadow p-6 mb-8">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-xl shadow p-4 sm:p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               {session?.user?.image && (
                 <img
@@ -169,10 +169,10 @@ export default function RecruiterDashboardPage() {
                     <div className="space-y-6">
                       {activeJobs.map((job) => (
                         <div key={job.id} className="bg-white rounded-xl shadow overflow-hidden">
-                          <div className="p-6 border-b border-gray-100">
-                            <div className="flex justify-between items-start">
+                          <div className="p-4 sm:p-6 border-b border-gray-100">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                               <div className="flex-1">
-                                <h3 className="text-xl font-semibold text-gray-900">{job.title}</h3>
+                                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{job.title}</h3>
                                 {job.companyName && (
                                   <p className="text-gray-600 text-sm">{job.companyName}</p>
                                 )}
@@ -190,13 +190,13 @@ export default function RecruiterDashboardPage() {
                               </div>
                               <button
                                 onClick={() => toggleArchive(job.id, false)}
-                                className="ml-4 px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 font-medium"
+                                className="self-start px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 font-medium"
                               >
                                 Archive
                               </button>
                             </div>
                           </div>
-                  <div className="p-6">
+                  <div className="p-4 sm:p-6">
                     <h3 className="font-medium text-gray-900 mb-4">
                       Candidates ({job.applications.length})
                     </h3>
@@ -332,15 +332,15 @@ export default function RecruiterDashboardPage() {
                     <div className="space-y-6">
                       {archivedJobs.map((job) => (
                         <div key={job.id} className="bg-white rounded-xl shadow overflow-hidden opacity-75">
-                          <div className="p-6 border-b border-gray-100">
-                            <div className="flex justify-between items-start">
+                          <div className="p-4 sm:p-6 border-b border-gray-100">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-xs font-medium px-2 py-1 rounded bg-gray-100 text-gray-600">
                                     ARCHIVED
                                   </span>
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900">{job.title}</h3>
+                                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">{job.title}</h3>
                                 {job.companyName && (
                                   <p className="text-gray-600 text-sm">{job.companyName}</p>
                                 )}
@@ -353,13 +353,13 @@ export default function RecruiterDashboardPage() {
                               </div>
                               <button
                                 onClick={() => toggleArchive(job.id, true)}
-                                className="ml-4 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 font-medium"
+                                className="self-start px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 font-medium"
                               >
                                 Unarchive
                               </button>
                             </div>
                           </div>
-                          <div className="p-6">
+                          <div className="p-4 sm:p-6">
                             <h3 className="font-medium text-gray-900 mb-4">
                               Candidates ({job.applications.length})
                             </h3>

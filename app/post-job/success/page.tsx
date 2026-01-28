@@ -23,9 +23,9 @@ function PostJobSuccessContent() {
   }, [searchParams])
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow">
-        <h1 className="text-3xl font-bold mb-4">Job Created Successfully!</h1>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+      <div className="max-w-2xl w-full bg-white p-5 sm:p-8 rounded-lg shadow">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4">Job Created Successfully!</h1>
         <p className="text-gray-600 mb-6">
           Your job posting has been created and is now live.
         </p>
@@ -35,19 +35,19 @@ function PostJobSuccessContent() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Job URL
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={jobUrl}
                 readOnly
-                className="flex-1 border rounded px-3 py-2 bg-gray-50"
+                className="flex-1 border rounded px-3 py-2 bg-gray-50 text-sm sm:text-base min-w-0"
               />
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(jobUrl)
                   alert('Copied to clipboard!')
                 }}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap"
               >
                 Copy
               </button>
@@ -90,8 +90,8 @@ function PostJobSuccessContent() {
 export default function PostJobSuccessPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+        <div className="max-w-2xl w-full bg-white p-5 sm:p-8 rounded-lg shadow">
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>

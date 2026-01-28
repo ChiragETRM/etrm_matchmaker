@@ -75,11 +75,11 @@ export default function ApplyResultPage() {
 
   if (passed) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+        <div className="max-w-2xl w-full bg-white p-5 sm:p-8 rounded-lg shadow text-center">
           <div className="mb-6">
-            <div className="text-6xl mb-4">✅</div>
-            <h1 className="text-3xl font-bold mb-4 text-green-600">
+            <div className="text-5xl sm:text-6xl mb-4">✅</div>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-green-600">
               Congratulations!
             </h1>
             <p className="text-lg text-gray-600 mb-6">
@@ -102,7 +102,7 @@ export default function ApplyResultPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
         <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow text-center">
           <div>Loading...</div>
         </div>
@@ -111,11 +111,11 @@ export default function ApplyResultPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+      <div className="max-w-2xl w-full bg-white p-5 sm:p-8 rounded-lg shadow">
         <div className="mb-6 text-center">
-          <div className="text-6xl mb-4">😔</div>
-          <h1 className="text-3xl font-bold mb-4 text-gray-800">
+          <div className="text-5xl sm:text-6xl mb-4">😔</div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-gray-800">
             This role isn&apos;t a match right now
           </h1>
           <p className="text-lg text-gray-600 mb-4">

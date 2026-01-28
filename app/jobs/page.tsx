@@ -542,7 +542,7 @@ function JobsContent() {
               {/* Mobile filter toggle */}
               <button
                 onClick={() => setMobileFiltersOpen(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg"
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg relative"
               >
                 <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -571,8 +571,8 @@ function JobsContent() {
           {/* Content area */}
           <div className="flex-1 overflow-hidden">
             <div className="h-full grid grid-cols-1 lg:grid-cols-5 gap-0">
-              {/* Jobs list */}
-              <div className="lg:col-span-2 border-r border-gray-200 bg-white overflow-hidden flex flex-col">
+              {/* Jobs list - hidden on mobile when a job is selected */}
+              <div className={`lg:col-span-2 border-r border-gray-200 bg-white overflow-hidden flex flex-col ${selectedJob ? 'hidden lg:flex' : 'flex'}`}>
                 {loading ? (
                   <div className="p-8 text-center text-gray-500">Loading jobs...</div>
                 ) : jobs.length === 0 ? (
@@ -630,14 +630,29 @@ function JobsContent() {
                 )}
               </div>
 
-              {/* Job detail */}
-              <div className="lg:col-span-3 bg-white overflow-hidden flex flex-col">
+              {/* Job detail - shown on mobile only when a job is selected */}
+              <div className={`lg:col-span-3 bg-white overflow-hidden flex-col ${selectedJob || detailLoading ? 'flex' : 'hidden lg:flex'}`}>
                 {detailLoading ? (
                   <div className="flex-1 flex items-center justify-center text-gray-500">
                     Loading...
                   </div>
                 ) : selectedJob ? (
-                  <div className="overflow-y-auto flex-1 p-6">
+                  <div className="overflow-y-auto flex-1 p-4 sm:p-6">
+                    {/* Mobile back button */}
+                    <button
+                      onClick={() => {
+                        setSelectedJob(null)
+                        const url = new URL(window.location.href)
+                        url.searchParams.delete('slug')
+                        window.history.replaceState({}, '', url.toString())
+                      }}
+                      className="lg:hidden flex items-center gap-1 text-indigo-600 font-medium text-sm mb-4"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Back to jobs
+                    </button>
                     <div className="flex items-start justify-between gap-4 mb-1">
                       <div className="flex-1">
                         <h1 className="text-2xl font-bold text-gray-900 mb-1">{selectedJob.title}</h1>
@@ -685,7 +700,7 @@ function JobsContent() {
                       />
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                       <button
                         onClick={async () => {
                           if (!selectedJob) return

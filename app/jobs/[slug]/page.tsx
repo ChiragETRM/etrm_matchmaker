@@ -403,9 +403,9 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white p-8 rounded-lg shadow">
+        <div className="bg-white p-4 sm:p-8 rounded-lg shadow">
           <div className="mb-6">
             <Link
               href="/jobs"
@@ -413,9 +413,9 @@ export default function JobDetailPage() {
             >
               ← Back to Jobs
             </Link>
-            <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{job.title}</h1>
             {job.companyName && (
-              <p className="text-xl text-gray-600 mb-4">{job.companyName}</p>
+              <p className="text-lg sm:text-xl text-gray-600 mb-4">{job.companyName}</p>
             )}
             <div className="flex flex-wrap gap-2 text-sm text-gray-600">
               <span>{job.locationText}</span>
@@ -491,7 +491,7 @@ export default function JobDetailPage() {
                     ✓ Successfully subscribed! You&apos;ll receive job alerts via email.
                   </div>
                 ) : (
-                  <form onSubmit={handleJobAlertSubmit} className="flex gap-2">
+                  <form onSubmit={handleJobAlertSubmit} className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="email"
                       value={jobAlertEmail}
@@ -503,7 +503,7 @@ export default function JobDetailPage() {
                     <button
                       type="submit"
                       disabled={jobAlertLoading}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
                     >
                       {jobAlertLoading ? 'Subscribing...' : 'Subscribe'}
                     </button>
@@ -514,17 +514,17 @@ export default function JobDetailPage() {
           )}
 
           <div className="border-t pt-6">
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 onClick={handleOneClickApply}
                 disabled={oneClickLoading || status === 'loading'}
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-base sm:text-lg font-semibold"
               >
                 {oneClickLoading ? 'Processing...' : '1 Click Apply'}
               </button>
               <button
                 onClick={handleApply}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-semibold"
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base sm:text-lg font-semibold"
               >
                 Apply Now
               </button>

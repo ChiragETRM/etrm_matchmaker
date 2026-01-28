@@ -1,9 +1,9 @@
 export default function ApplicationSuccessPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow text-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 sm:p-8">
+      <div className="max-w-2xl w-full bg-white p-5 sm:p-8 rounded-lg shadow text-center">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-4 text-green-600">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-green-600">
             Congratulations! You have applied for the role!
           </h1>
           <p className="text-gray-500 text-sm">

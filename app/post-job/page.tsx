@@ -314,18 +314,18 @@ export default function PostJobPage() {
   // No auth required - show form immediately
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-6 sm:py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-extrabold mb-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-extrabold mb-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Post a Job
           </h1>
-          <p className="text-gray-600">Find the right ETRM candidate, fast!</p>
+          <p className="text-gray-600 text-sm sm:text-base">Find the right ETRM candidate, fast!</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Job Basics */}
-          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+          <section className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Job Basics</h2>
             <div className="space-y-5">
               <div>
@@ -360,7 +360,7 @@ export default function PostJobPage() {
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-700">
                     Remote Policy *
@@ -404,7 +404,7 @@ export default function PostJobPage() {
           </section>
 
           {/* ETRM Role Details */}
-          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+          <section className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">ETRM Role Details</h2>
             <div className="space-y-5">
               <div>
@@ -497,7 +497,7 @@ export default function PostJobPage() {
           </section>
 
           {/* Budget */}
-          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+          <section className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Max Budget *</h2>
             <div className="space-y-5">
               <div>
@@ -558,7 +558,7 @@ export default function PostJobPage() {
           </section>
 
           {/* Job Description */}
-          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+          <section className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-2 text-gray-900">Job Description *</h2>
               <p className="text-sm text-gray-500 mb-4">
@@ -610,7 +610,7 @@ export default function PostJobPage() {
           </section>
 
           {/* Minimum Requirements */}
-          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+          <section className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Minimum Requirements</h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -619,7 +619,7 @@ export default function PostJobPage() {
             </div>
 
             {/* Add Requirement Buttons */}
-            <div className="mb-6 grid grid-cols-2 gap-3">
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => addGateRule('years_experience')}
@@ -848,7 +848,7 @@ export default function PostJobPage() {
           </section>
 
           {/* Your Email */}
-          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+          <section className="bg-white rounded-2xl shadow-lg p-4 sm:p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Your Email</h2>
             {session?.user && (
               <div className="flex items-center gap-3 mb-4 p-3 bg-green-50 border border-green-200 rounded-xl">

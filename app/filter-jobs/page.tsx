@@ -167,13 +167,13 @@ export default function FilterJobsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         <div className="mb-6">
           <Link href="/jobs" className="text-indigo-600 hover:underline mb-4 inline-block">
             ← Back to jobs
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Eligible Jobs</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Eligible Jobs</h1>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">
             {sessionStatus === 'authenticated'
               ? 'We\'ll automatically show jobs that match your profile. Answer any missing questions below.'
               : 'Answer a few questions. We\'ll show only roles that match your profile.'}
@@ -193,12 +193,12 @@ export default function FilterJobsPage() {
             </Link>
           </div>
         ) : (
-          <div className="flex gap-6">
+          <div className="flex flex-col lg:flex-row gap-6">
             {/* Left Sidebar - Filters */}
-            <div className="w-80 flex-shrink-0">
+            <div className="w-full lg:w-80 lg:flex-shrink-0">
               <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="bg-white p-6 rounded-xl shadow sticky top-4"
+                className="bg-white p-4 sm:p-6 rounded-xl shadow lg:sticky lg:top-4"
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter Criteria</h2>
                 {sessionStatus === 'authenticated' && (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0) && (
@@ -387,9 +387,9 @@ export default function FilterJobsPage() {
                 </div>
               )}
               {jobs === null && (
-                <div className="bg-white p-12 rounded-xl shadow text-center">
+                <div className="bg-white p-6 sm:p-12 rounded-xl shadow text-center">
                   <p className="text-gray-500">
-                    Fill out the filter criteria on the left and click &quot;Find my jobs&quot; to see matching roles.
+                    Fill out the filter criteria and click &quot;Find my jobs&quot; to see matching roles.
                   </p>
                 </div>
               )}
