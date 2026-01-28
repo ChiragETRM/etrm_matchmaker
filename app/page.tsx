@@ -51,7 +51,7 @@ export default function Home() {
                 <ul className="space-y-4 mb-6 border-t border-gray-100 pt-4">
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      1. Zero noise, only qualified profiles
+                      Zero noise, only qualified profiles
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Candidates are screened on ETRM skills before CV submission. You see only people who meet your minimum bar.
@@ -59,7 +59,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      2. Built specifically for ETRM roles
+                      Built specifically for ETRM roles
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Endur, Allegro, RightAngle, commodities, markets, modules — all first-class fields, not afterthoughts.
@@ -67,7 +67,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      3. No ATS pain, no setup cost
+                      No ATS pain, no setup cost
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Post a job, define requirements, receive shortlisted candidates by email. No tools to learn.
@@ -75,7 +75,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      4. Faster hiring decisions
+                      Faster hiring decisions
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Every CV comes with structured answers to your key questions. Less guessing, fewer calls.
@@ -83,7 +83,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      5. Clean, time-boxed postings
+                      Clean, time-boxed postings
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Jobs auto-expire in 30 days. No stale roles, no clutter, no awkward takedowns.
@@ -142,7 +142,7 @@ export default function Home() {
                 <ul className="space-y-4 mb-6 border-t border-gray-100 pt-4 mt-4">
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      1. No wasted applications
+                      No wasted applications
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       If you don&apos;t meet the requirements, you find out immediately. If you do, your CV goes straight to the recruiter.
@@ -150,7 +150,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      2. Real ETRM jobs, properly described
+                      Real ETRM jobs, properly described
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Clear systems, commodities, seniority, and expectations. No vague &quot;finance tech&quot; nonsense.
@@ -158,7 +158,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      3. No account creation mandatory
+                      No account creation mandatory
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Browse jobs, answer questions, upload CV. That&apos;s it.
@@ -166,7 +166,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      4. Fair screening, skill-first
+                      Fair screening, skill-first
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Everyone answers the same questions. You&apos;re judged on experience, not buzzwords or CV styling.
@@ -174,7 +174,7 @@ export default function Home() {
                   </li>
                   <li className="pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
                     <h4 className="font-semibold text-gray-900 mb-1.5 text-base">
-                      5. Faster responses, less ghosting
+                      Faster responses, less ghosting
                     </h4>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Recruiters only see qualified candidates, so they actually respond.
