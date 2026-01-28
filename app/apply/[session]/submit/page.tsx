@@ -23,6 +23,7 @@ export default function SubmitApplicationPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [sessionValid, setSessionValid] = useState<boolean | null>(null)
   const [sessionError, setSessionError] = useState<string | null>(null)
+  const [showTermsModal, setShowTermsModal] = useState(false)
   const session = params.session as string
 
   const { register, handleSubmit, formState: { errors } } = useForm()
@@ -268,8 +269,15 @@ export default function SubmitApplicationPage() {
                     required
                   />
                   <span className="text-sm">
-                    I consent to share my details and resume with the recruiter
-                    for this role. *
+                    I consent to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      className="text-blue-600 hover:text-blue-800 underline"
+                    >
+                      key terms and conditions
+                    </button>
+                    {' '}for applying for this role. *
                   </span>
                 </label>
                 {errors.consent && (
@@ -277,7 +285,86 @@ export default function SubmitApplicationPage() {
                     Consent is required
                   </p>
                 )}
+                <p className="text-xs text-gray-500 mt-2 ml-6">
+                  By proceeding, you provide explicit consent for the above terms.
+                </p>
               </div>
+
+              {showTermsModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold">Key Terms and Conditions</h2>
+                      <button
+                        onClick={() => setShowTermsModal(false)}
+                        className="text-gray-500 hover:text-gray-700 text-2xl"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="space-y-4 text-sm">
+                      <div>
+                        <h3 className="font-semibold mb-2">Job alerts & communication</h3>
+                        <p className="text-gray-700">
+                          I consent to receive role-relevant job alerts and application-related communication from the LearnETRM job platform.
+                          I understand that I can unsubscribe at any time.
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Role-specific representation</h3>
+                        <p className="text-gray-700">
+                          I authorize LearnETRM to represent my profile solely for this specific position and only for the duration of this recruitment process.
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Accuracy of information</h3>
+                        <p className="text-gray-700">
+                          I confirm that all information provided by me, including my CV and application responses, is accurate and complete to the best of my knowledge.
+                          I understand that any material misrepresentation may result in my application being withdrawn.
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Data sharing with the hiring party</h3>
+                        <p className="text-gray-700">
+                          I consent to my application details being shared with the hiring company and its authorized recruiters strictly for evaluation of this role.
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">No employment guarantee</h3>
+                        <p className="text-gray-700">
+                          I understand that submitting an application does not guarantee interviews, shortlisting, or employment, and that hiring decisions rest solely with the employer.
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Duplicate or parallel applications</h3>
+                        <p className="text-gray-700">
+                          I confirm that I have not authorized any other recruiter or platform to represent me for this same role, unless explicitly disclosed to LearnETRM.
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Data retention (light but necessary)</h3>
+                        <p className="text-gray-700">
+                          I understand that my application data will be retained for a limited period in line with LearnETRM's data retention and privacy practices.
+                        </p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold mb-2">Governing framework</h3>
+                        <p className="text-gray-700">
+                          These consents are governed by applicable data protection and employment laws, including GDPR where applicable.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <button
+                        onClick={() => setShowTermsModal(false)}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 {turnstileSiteKey && (
