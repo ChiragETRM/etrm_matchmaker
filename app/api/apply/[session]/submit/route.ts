@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { uploadFile } from '@/lib/storage'
 import { sendEmail } from '@/lib/email'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limit'
+import { verifyTurnstileToken, isTurnstileEnabled } from '@/lib/turnstile'
+import { escapeHtml, sanitizeName, sanitizePhone, sanitizeLinkedInUrl } from '@/lib/sanitize'
 import { z } from 'zod'
 
 const submitSchema = z.object({
-  candidateName: z.string().min(1),
-  candidateEmail: z.string().email(),
-  candidatePhone: z.string().optional(),
+  candidateName: z.string().min(1).max(200),
+  candidateEmail: z.string().email().max(254),
+  candidatePhone: z.string().max(30).optional(),
   candidateLinkedin: z.string().url().optional().or(z.literal('')),
   consent: z.boolean().refine((val) => val === true, {
     message: 'Consent is required',
@@ -21,13 +23,22 @@ export async function POST(
   { params }: { params: { session: string } }
 ) {
   try {
-    // Rate limiting
-    const ip = request.headers.get('x-forwarded-for') || 'unknown'
-    const rateLimit = checkRateLimit(`submit:${ip}`)
+    // Rate limiting (async for Redis support)
+    const ip = getClientIp(request)
+    const rateLimit = await checkRateLimit(`submit:${ip}`, RATE_LIMITS.submit)
+
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimit.limit.toString(),
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+            'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+          },
+        }
       )
     }
 
@@ -50,7 +61,7 @@ export async function POST(
     const allowedExtensions = ['.pdf', '.doc', '.docx']
     const fileName = resume.name.toLowerCase()
     const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext))
-    
+
     if (!allowedTypes.includes(resume.type) && !hasValidExtension) {
       return NextResponse.json(
         { error: 'Resume must be PDF or DOCX' },
@@ -66,15 +77,42 @@ export async function POST(
       )
     }
 
-    const data = submitSchema.parse({
+    // Parse and validate form data
+    const rawData = {
       candidateName: formData.get('candidateName'),
       candidateEmail: formData.get('candidateEmail'),
       candidatePhone: formData.get('candidatePhone') || undefined,
       candidateLinkedin: formData.get('candidateLinkedin') || undefined,
       consent: formData.get('consent') === 'true',
       turnstileToken: formData.get('turnstileToken') || undefined,
-    })
+    }
 
+    const data = submitSchema.parse(rawData)
+
+    // Verify Turnstile CAPTCHA if enabled
+    if (isTurnstileEnabled()) {
+      const turnstileResult = await verifyTurnstileToken(data.turnstileToken, ip)
+      if (!turnstileResult.success) {
+        return NextResponse.json(
+          { error: turnstileResult.error || 'CAPTCHA verification failed' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Sanitize user inputs
+    const sanitizedName = sanitizeName(data.candidateName)
+    const sanitizedPhone = data.candidatePhone ? sanitizePhone(data.candidatePhone) : null
+    const sanitizedLinkedin = data.candidateLinkedin ? sanitizeLinkedInUrl(data.candidateLinkedin) : null
+
+    if (!sanitizedName) {
+      return NextResponse.json(
+        { error: 'Invalid name provided' },
+        { status: 400 }
+      )
+    }
+
+    // Get the application session
     const session = await prisma.applicationSession.findUnique({
       where: { sessionToken: params.session },
       include: {
@@ -104,18 +142,32 @@ export async function POST(
       )
     }
 
+    // Check for existing application (duplicate prevention)
+    const existingApplication = await prisma.application.findUnique({
+      where: {
+        jobId_candidateEmail: {
+          jobId: session.jobId,
+          candidateEmail: data.candidateEmail.toLowerCase(),
+        },
+      },
+    })
+
+    if (existingApplication) {
+      return NextResponse.json(
+        { error: 'You have already applied for this position' },
+        { status: 409 } // Conflict
+      )
+    }
+
     const answers = session.answersJson
       ? JSON.parse(session.answersJson)
       : {}
 
-    // Upload resume (metadata for dashboard) and prepare email attachment
-    // Read file once - File objects can only be read once
+    // Upload resume
     const resumeArrayBuffer = await resume.arrayBuffer()
     const resumeBuffer = Buffer.from(resumeArrayBuffer)
-    
-    // Create a new File object from the buffer for upload
     const resumeFileForUpload = new File([resumeBuffer], resume.name, { type: resume.type })
-    
+
     let fileId: string | null = null
     try {
       const uploadResult = await uploadFile(resumeFileForUpload, 'resumes')
@@ -127,6 +179,7 @@ export async function POST(
         { status: 500 }
       )
     }
+
     const resumeContentType =
       resume.type === 'application/pdf'
         ? 'application/pdf'
@@ -138,10 +191,10 @@ export async function POST(
     const application = await prisma.application.create({
       data: {
         jobId: session.jobId,
-        candidateName: data.candidateName,
-        candidateEmail: data.candidateEmail,
-        candidatePhone: data.candidatePhone,
-        candidateLinkedin: data.candidateLinkedin || null,
+        candidateName: sanitizedName,
+        candidateEmail: data.candidateEmail.toLowerCase(),
+        candidatePhone: sanitizedPhone,
+        candidateLinkedin: sanitizedLinkedin,
         resumeFileId: fileId,
         answersJson: JSON.stringify(answers),
       },
@@ -155,7 +208,7 @@ export async function POST(
       },
     })
 
-    // Send email to recruiter (non-blocking - submission succeeds even if email fails)
+    // Send email to recruiter (non-blocking)
     let emailResult: { success: boolean; messageId: string; error?: string } = {
       success: false,
       messageId: '',
@@ -164,7 +217,7 @@ export async function POST(
 
     try {
       const subjectPrefix = session.job.emailSubjectPrefix || 'Qualified Candidate'
-      const subject = `${subjectPrefix} | ${session.job.title} | ${data.candidateName} | ${session.job.locationText}`
+      const subject = `${subjectPrefix} | ${escapeHtml(session.job.title)} | ${escapeHtml(sanitizedName)} | ${escapeHtml(session.job.locationText)}`
 
       const questions = session.job.questionnaire?.questions ?? []
       const answersHtml = questions
@@ -172,11 +225,13 @@ export async function POST(
           const answer = answers[q.key]
           let displayValue = answer
           if (Array.isArray(answer)) {
-            displayValue = answer.join(', ')
+            displayValue = answer.map(a => escapeHtml(String(a))).join(', ')
           } else if (typeof answer === 'boolean') {
             displayValue = answer ? 'Yes' : 'No'
+          } else {
+            displayValue = escapeHtml(String(displayValue || 'N/A'))
           }
-          return `<tr><td><strong>${q.label}</strong></td><td>${displayValue || 'N/A'}</td></tr>`
+          return `<tr><td><strong>${escapeHtml(q.label)}</strong></td><td>${displayValue}</td></tr>`
         })
         .join('')
 
@@ -184,27 +239,28 @@ export async function POST(
       const resumeUrl = fileId ? `${baseUrl}/api/files/${fileId}/download` : 'N/A'
       const jobLink = `${baseUrl}/jobs/${session.job.slug}`
 
+      // Build email with escaped values
       const emailHtml = `
         <h2>New Qualified Candidate Application</h2>
 
         <h3>Job</h3>
         <ul>
-          <li><strong>Role:</strong> ${session.job.title}</li>
-          <li><strong>Location:</strong> ${session.job.locationText}</li>
-          <li><strong>ETRM Packages:</strong> ${session.job.etrmPackages.join(', ') || 'N/A'}</li>
-          <li><strong>Link to job:</strong> <a href="${jobLink}">${jobLink}</a></li>
+          <li><strong>Role:</strong> ${escapeHtml(session.job.title)}</li>
+          <li><strong>Location:</strong> ${escapeHtml(session.job.locationText)}</li>
+          <li><strong>ETRM Packages:</strong> ${session.job.etrmPackages.map(p => escapeHtml(p)).join(', ') || 'N/A'}</li>
+          <li><strong>Link to job:</strong> <a href="${escapeHtml(jobLink)}">${escapeHtml(jobLink)}</a></li>
         </ul>
 
         <h3>Candidate</h3>
         <ul>
-          <li><strong>Name:</strong> ${data.candidateName}</li>
-          <li><strong>Email:</strong> ${data.candidateEmail}</li>
-          <li><strong>Phone:</strong> ${data.candidatePhone || 'N/A'}</li>
-          <li><strong>LinkedIn:</strong> ${data.candidateLinkedin || 'N/A'}</li>
+          <li><strong>Name:</strong> ${escapeHtml(sanitizedName)}</li>
+          <li><strong>Email:</strong> ${escapeHtml(data.candidateEmail)}</li>
+          <li><strong>Phone:</strong> ${escapeHtml(sanitizedPhone || 'N/A')}</li>
+          <li><strong>LinkedIn:</strong> ${sanitizedLinkedin ? `<a href="${escapeHtml(sanitizedLinkedin)}">${escapeHtml(sanitizedLinkedin)}</a>` : 'N/A'}</li>
         </ul>
 
         <h3>Resume</h3>
-        <p>CV attached to this email. <a href="${resumeUrl}">Or download here</a>.</p>
+        <p>CV attached to this email. <a href="${escapeHtml(resumeUrl)}">Or download here</a>.</p>
         ${answersHtml ? `
         <h3>Questions &amp; Answers</h3>
         <table border="1" cellpadding="5" cellspacing="0">
@@ -221,15 +277,14 @@ export async function POST(
         attachmentSize: resumeBuffer.length,
       })
 
-      // Ensure we have a valid email address
       if (!session.job.recruiterEmailTo || !session.job.recruiterEmailTo.includes('@')) {
         throw new Error(`Invalid recruiter email address: ${session.job.recruiterEmailTo}`)
       }
 
       const emailResponse = await sendEmail({
         to: session.job.recruiterEmailTo,
-        cc: session.job.recruiterEmailCc && session.job.recruiterEmailCc.length > 0 
-          ? session.job.recruiterEmailCc 
+        cc: session.job.recruiterEmailCc && session.job.recruiterEmailCc.length > 0
+          ? session.job.recruiterEmailCc
           : undefined,
         subject,
         html: emailHtml,
@@ -241,21 +296,19 @@ export async function POST(
           },
         ],
       })
-      
+
       console.log('Email send response:', {
         success: emailResponse.success,
         messageId: emailResponse.messageId,
         error: emailResponse.error,
       })
-      
-      // Map response to expected format
+
       emailResult = {
         success: emailResponse.success,
         messageId: emailResponse.messageId,
         error: emailResponse.error,
       }
 
-      // If email failed, log it prominently
       if (!emailResult.success) {
         console.error('CRITICAL: Email to recruiter failed!', {
           to: session.job.recruiterEmailTo,
@@ -272,7 +325,7 @@ export async function POST(
       }
     }
 
-    // Log email
+    // Log email result
     try {
       await prisma.mailLog.create({
         data: {
@@ -295,12 +348,22 @@ export async function POST(
     })
   } catch (error) {
     console.error('Error submitting application:', error)
+
+    // Handle duplicate application error from database constraint
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json(
+        { error: 'You have already applied for this position' },
+        { status: 409 }
+      )
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       )
     }
+
     return NextResponse.json(
       { error: 'Failed to submit application' },
       { status: 500 }

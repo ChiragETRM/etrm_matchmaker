@@ -1,128 +1,155 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { downloadFileFromStorage, verifyLocalDownloadToken } from '@/lib/storage'
 
-// File download endpoint
-// Downloads file from storage provider (Supabase/S3/R2) and returns it
+// File download endpoint with authorization
+// Access is granted if:
+// 1. User is the candidate who submitted the resume
+// 2. User is the recruiter for the job the resume was submitted to
+// 3. A valid signed token is provided (for email links)
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { fileId: string } }
 ) {
   try {
+    const fileId = params.fileId
+    const searchParams = request.nextUrl.searchParams
+
+    // Check for signed URL token (for LOCAL provider or email links)
+    const token = searchParams.get('token')
+    const expires = searchParams.get('expires')
+
+    if (token && expires) {
+      if (verifyLocalDownloadToken(fileId, token, expires)) {
+        // Token is valid, proceed with download
+        return serveFile(fileId)
+      }
+      return NextResponse.json(
+        { error: 'Download link has expired or is invalid' },
+        { status: 403 }
+      )
+    }
+
+    // Get file metadata to check authorization
     const fileObject = await prisma.fileObject.findUnique({
-      where: { id: params.fileId },
+      where: { id: fileId },
+      include: {
+        applications: {
+          select: {
+            candidateEmail: true,
+            job: {
+              select: {
+                recruiterEmailTo: true,
+                recruiterEmailCc: true,
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!fileObject) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    // Use the file's actual provider, fallback to env var
-    const fileProvider = fileObject.provider || process.env.STORAGE_PROVIDER || 'LOCAL'
-    const provider = process.env.STORAGE_PROVIDER || 'LOCAL'
+    // Get current user session
+    const session = await auth()
+    const userEmail = session?.user?.email?.toLowerCase()
 
-    // Handle Supabase Storage
-    if ((fileProvider === 'SUPABASE' || provider === 'SUPABASE') && process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
-      try {
-        // Construct Supabase Storage public URL
-        // Supabase Storage URLs follow pattern: {SUPABASE_URL}/storage/v1/object/public/{bucket}/{path}
-        const bucket = 'resumes' // Default bucket, could be configurable
-        const supabaseUrl = process.env.SUPABASE_URL.replace(/\/$/, '') // Remove trailing slash
-        const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${fileObject.path}`
-        
-        // Fetch file from Supabase Storage
-        const response = await fetch(publicUrl, {
-          headers: {
-            'apikey': process.env.SUPABASE_KEY,
-          },
-        })
+    // Check if user is authorized to download this file
+    let authorized = false
+    let authReason = ''
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch file from Supabase: ${response.statusText}`)
+    if (userEmail) {
+      for (const application of fileObject.applications) {
+        // Check if user is the candidate who submitted
+        if (application.candidateEmail.toLowerCase() === userEmail) {
+          authorized = true
+          authReason = 'candidate'
+          break
         }
 
-        const fileBuffer = await response.arrayBuffer()
-        const fileName = fileObject.path.split('/').pop() || 'download'
+        // Check if user is the primary recruiter
+        if (application.job.recruiterEmailTo.toLowerCase() === userEmail) {
+          authorized = true
+          authReason = 'recruiter'
+          break
+        }
 
-        return new NextResponse(fileBuffer, {
-          headers: {
-            'Content-Type': fileObject.mimeType || 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
-            'Content-Length': fileObject.sizeBytes.toString(),
-          },
-        })
-      } catch (error) {
-        console.error('Error downloading from Supabase:', error)
-        return NextResponse.json(
-          { error: 'Failed to download file from storage' },
-          { status: 500 }
-        )
+        // Check if user is in CC list
+        const ccEmails = application.job.recruiterEmailCc.map(e => e.toLowerCase())
+        if (ccEmails.includes(userEmail)) {
+          authorized = true
+          authReason = 'recruiter-cc'
+          break
+        }
       }
     }
 
-    // Handle S3/R2 (TODO: implement)
-    if (provider === 'S3' || provider === 'R2') {
+    // If file has no applications (orphan), only allow in development
+    if (fileObject.applications.length === 0) {
+      if (process.env.NODE_ENV === 'development') {
+        authorized = true
+        authReason = 'dev-orphan'
+      }
+    }
+
+    if (!authorized) {
+      // Log unauthorized access attempt
+      console.warn('Unauthorized file download attempt:', {
+        fileId,
+        userEmail: userEmail || 'anonymous',
+        applicationsCount: fileObject.applications.length,
+      })
+
       return NextResponse.json(
-        { error: 'S3/R2 download not yet implemented' },
-        { status: 501 }
+        { error: 'You do not have permission to download this file' },
+        { status: 403 }
       )
     }
 
-    // LOCAL provider - retrieve file data from database
-    if (fileProvider === 'LOCAL' || provider === 'LOCAL') {
-      if (!fileObject.data) {
-        return NextResponse.json(
-          { 
-            error: 'File data not available. This file was uploaded before file storage was configured. Please upload a new file.',
-            code: 'FILE_DATA_MISSING'
-          },
-          { status: 404 }
-        )
-      }
+    console.log('File download authorized:', {
+      fileId,
+      userEmail,
+      authReason,
+    })
 
-      try {
-        // Convert base64 data back to buffer
-        const fileBuffer = Buffer.from(fileObject.data, 'base64')
-        const fileName = fileObject.path.split('/').pop() || 'download'
-
-        return new NextResponse(fileBuffer, {
-          headers: {
-            'Content-Type': fileObject.mimeType || 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
-            'Content-Length': fileObject.sizeBytes.toString(),
-          },
-        })
-      } catch (error) {
-        console.error('Error decoding file data:', error)
-        return NextResponse.json(
-          { error: 'Failed to decode file data' },
-          { status: 500 }
-        )
-      }
-    }
-
-    // Unknown provider
-    return NextResponse.json(
-      { error: 'File storage not configured. Files are not actually stored in LOCAL mode.' },
-      { status: 501 }
-    )
+    return serveFile(fileId)
   } catch (error) {
     console.error('Error downloading file:', error)
-    
-    // Check if error is related to missing column
-    if (error instanceof Error && error.message.includes('data')) {
-      return NextResponse.json(
-        { 
-          error: 'Database schema needs to be updated. Please run the migration to add the data column.',
-          code: 'SCHEMA_OUTDATED'
-        },
-        { status: 500 }
-      )
-    }
-    
     return NextResponse.json(
       { error: 'Failed to download file' },
       { status: 500 }
     )
   }
+}
+
+/**
+ * Serve the file content
+ */
+async function serveFile(fileId: string): Promise<NextResponse> {
+  const fileData = await downloadFileFromStorage(fileId)
+
+  if (!fileData) {
+    return NextResponse.json(
+      { error: 'File data not available' },
+      { status: 404 }
+    )
+  }
+
+  // Convert Buffer to Uint8Array for NextResponse compatibility
+  const body = new Uint8Array(fileData.buffer)
+
+  const response = new NextResponse(body, {
+    headers: {
+      'Content-Type': fileData.mimeType || 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileData.filename)}"`,
+      'Content-Length': fileData.buffer.length.toString(),
+      'Cache-Control': 'private, max-age=3600', // 1 hour, private (not shared caches)
+    },
+  })
+
+  return response
 }

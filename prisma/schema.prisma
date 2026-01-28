@@ -198,6 +198,7 @@ model Application {
   mailLogs          MailLog[]
   session           ApplicationSession?
 
+  @@unique([jobId, candidateEmail]) // Prevent duplicate applications
   @@index([jobId])
   @@index([candidateEmail])
   @@map("applications")
