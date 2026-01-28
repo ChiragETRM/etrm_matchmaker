@@ -97,6 +97,7 @@ model Job {
   budgetCurrency        String?   @map("budget_currency")
   budgetPeriod          String?   @map("budget_period") // ANNUAL | DAY_RATE
   budgetIsEstimate      Boolean   @default(false) @map("budget_is_estimate")
+  visaSponsorshipProvided Boolean? @map("visa_sponsorship_provided")
   jdText                String    @map("jd_text") @db.Text
   recruiterEmailTo      String    @map("recruiter_email_to")
   recruiterEmailCc      String[]  @map("recruiter_email_cc") @default([])

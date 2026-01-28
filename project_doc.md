@@ -17,7 +17,7 @@
 
 ## Project Overview
 
-**Curated Job Engine** (also branded as "ETRM Match Maker") is a lightweight web application designed specifically for ETRM (Energy Trading and Risk Management) job posting and candidate application system. The platform focuses on niche ETRM roles with specialized requirements.
+**Curated Job Engine** (also branded as "Hand Picked ETRM/CTRM Jobs") is a lightweight web application designed specifically for ETRM (Energy Trading and Risk Management) job posting and candidate application system. The platform focuses on niche ETRM roles with specialized requirements.
 
 ### Core Philosophy
 - **Stateless for Candidates**: No account creation required for candidates

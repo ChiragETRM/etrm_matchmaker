@@ -125,6 +125,7 @@ export default function PostJobPage() {
       budget: '150000',
       budgetCurrency: 'USD',
       budgetIsEstimate: false,
+      visaSponsorshipProvided: undefined as boolean | undefined,
       jdText: '',
       recruiterEmailTo: '',
       gateRules: [] as GateRule[],
@@ -276,6 +277,7 @@ export default function PostJobPage() {
         budgetMin: parseFloat(data.budget),
         budgetMax: parseFloat(data.budget),
         budgetPeriod: 'ANNUAL' as const,
+        visaSponsorshipProvided: data.visaSponsorshipProvided,
         recruiterEmailCc: [],
         emailSubjectPrefix: '',
         questions,
@@ -554,6 +556,34 @@ export default function PostJobPage() {
                   This is an estimated budget
                 </span>
               </label>
+            </div>
+          </section>
+
+          {/* Visa Sponsorship */}
+          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">Visa Sponsorship</h2>
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Visa Sponsorship Provided
+                </label>
+                <select
+                  {...register('visaSponsorshipProvided', {
+                    setValueAs: (value) => {
+                      if (value === '') return undefined
+                      return value === 'true'
+                    }
+                  })}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                >
+                  <option value="">Not specified</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+                <p className="text-sm text-gray-500 mt-2">
+                  Optional: Indicate if your company provides visa sponsorship for this role.
+                </p>
+              </div>
             </div>
           </section>
 

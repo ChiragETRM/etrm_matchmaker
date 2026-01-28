@@ -4,7 +4,7 @@ import Nav from './components/Nav'
 import SessionProvider from './components/SessionProvider'
 
 export const metadata: Metadata = {
-  title: 'ETRM Match Maker',
+  title: 'Hand Picked ETRM/CTRM Jobs',
   description: 'ETRM-focused job posting and application system',
 }
 

@@ -13,7 +13,7 @@ export default function Nav() {
           href="/"
           className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition mr-auto"
         >
-          ETRM Match Maker
+          Hand Picked ETRM/CTRM Jobs
         </Link>
         <div className="flex flex-wrap items-center gap-6 text-sm">
           <Link
