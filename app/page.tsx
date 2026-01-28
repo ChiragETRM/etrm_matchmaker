@@ -210,7 +210,7 @@ export default function Home() {
                   1. No wasted applications
                 </h4>
                 <p className="text-sm text-gray-600">
-                  If you don't meet the requirements, you find out immediately. If you do, your CV goes straight to the recruiter.
+                  If you don&apos;t meet the requirements, you find out immediately. If you do, your CV goes straight to the recruiter.
                 </p>
               </div>
               <div>
@@ -218,7 +218,7 @@ export default function Home() {
                   2. Real ETRM jobs, properly described
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Clear systems, commodities, seniority, and expectations. No vague "finance tech" nonsense.
+                  Clear systems, commodities, seniority, and expectations. No vague &quot;finance tech&quot; nonsense.
                 </p>
               </div>
               <div>
@@ -226,7 +226,7 @@ export default function Home() {
                   3. No account creation
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Browse jobs, answer questions, upload CV. That's it.
+                  Browse jobs, answer questions, upload CV. That&apos;s it.
                 </p>
               </div>
               <div>
@@ -234,7 +234,7 @@ export default function Home() {
                   4. Fair screening, skill-first
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Everyone answers the same questions. You're judged on experience, not buzzwords or CV styling.
+                  Everyone answers the same questions. You&apos;re judged on experience, not buzzwords or CV styling.
                 </p>
               </div>
               <div>

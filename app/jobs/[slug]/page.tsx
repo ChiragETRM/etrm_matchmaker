@@ -488,7 +488,7 @@ export default function JobDetailPage() {
                 </p>
                 {jobAlertSuccess ? (
                   <div className="text-green-600 text-sm font-medium">
-                    ✓ Successfully subscribed! You'll receive job alerts via email.
+                    ✓ Successfully subscribed! You&apos;ll receive job alerts via email.
                   </div>
                 ) : (
                   <form onSubmit={handleJobAlertSubmit} className="flex gap-2">
