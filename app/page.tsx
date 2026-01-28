@@ -7,7 +7,7 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-6xl font-extrabold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            ETRM Match Maker
+            Hand Picked ETRM/CTRM Jobs
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-2">
             ETRM-focused job portal
@@ -45,9 +45,35 @@ export default function Home() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   For Recruiters
                 </h2>
-                <p className="text-gray-600 leading-relaxed">
-                  Post ETRM-focused jobs with custom questionnaires and automated candidate screening. No accounts needed.
+                <p className="text-gray-600 leading-relaxed mb-4">
+                  Post ETRM-focused jobs. No accounts needed.
                 </p>
+                <ul className="space-y-3 mb-6">
+                  <li>
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      • No ATS pain, no setup cost
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Post a job, define requirements, receive shortlisted candidates by email. No tools to learn.
+                    </p>
+                  </li>
+                  <li>
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      • Faster hiring decisions
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Every CV comes with structured answers to your key questions. Less guessing, fewer calls.
+                    </p>
+                  </li>
+                  <li>
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      • Clean, time-boxed postings
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Jobs auto-expire in 30 days. No stale roles, no clutter, no awkward takedowns.
+                    </p>
+                  </li>
+                </ul>
               </div>
               <div className="flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform duration-300">
                 Get Started
@@ -138,28 +164,12 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              For Recruiters — 5 reasons to post here
+              For Recruiters — reasons to post here
             </h3>
             <div className="space-y-5">
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  1. Zero noise, only qualified profiles
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Candidates are screened on ETRM skills before CV submission. You see only people who meet your minimum bar.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
-                  2. Built specifically for ETRM roles
-                </h4>
-                <p className="text-sm text-gray-600">
-                  Endur, Allegro, RightAngle, commodities, markets, modules — all first-class fields, not afterthoughts.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">
-                  3. No ATS pain, no setup cost
+                  • No ATS pain, no setup cost
                 </h4>
                 <p className="text-sm text-gray-600">
                   Post a job, define requirements, receive shortlisted candidates by email. No tools to learn.
@@ -167,7 +177,7 @@ export default function Home() {
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  4. Faster hiring decisions
+                  • Faster hiring decisions
                 </h4>
                 <p className="text-sm text-gray-600">
                   Every CV comes with structured answers to your key questions. Less guessing, fewer calls.
@@ -175,7 +185,7 @@ export default function Home() {
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  5. Clean, time-boxed postings
+                  • Clean, time-boxed postings
                 </h4>
                 <p className="text-sm text-gray-600">
                   Jobs auto-expire in 30 days. No stale roles, no clutter, no awkward takedowns.
