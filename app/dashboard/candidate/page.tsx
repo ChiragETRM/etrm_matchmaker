@@ -371,12 +371,12 @@ export default function CandidateDashboardPage() {
                     id="phone-country"
                     value={phoneCountryCode}
                     onChange={(e) => setPhoneCountryCode(e.target.value)}
-                    className="w-[180px] shrink-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                    className="w-[140px] shrink-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
                     aria-label="Country code"
                   >
                     {PHONE_COUNTRIES.map((c) => (
                       <option key={c.code} value={c.code}>
-                        {c.flag} {c.dialCode ? `${c.dialCode} ${c.name}` : c.name}
+                        {c.flag} {c.dialCode ? `${c.dialCode} ${c.code}` : c.code}
                       </option>
                     ))}
                   </select>
