@@ -188,6 +188,17 @@ The PKCE code verifier cookie is now explicitly configured to prevent "Invalid c
 - Verify that the state cookie is not expired (maxAge: 15 minutes)
 - If using multiple server instances, ensure they all use the same `AUTH_SECRET`
 
+**Issue: "Couldn't sign you in – this browser or app may not be secure" (Google OAuth)**
+- Google blocks sign-in in contexts it considers insecure (e.g. some embedded browsers, certain localhost setups, or environments without a trusted origin).
+- **Workarounds:**
+  1. Use a standard browser (Chrome, Firefox, Edge, Safari) in a normal window, not an embedded or in-app browser.
+  2. In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → your OAuth client:
+     - Add your app URL to **Authorized JavaScript origins** (e.g. `http://localhost:3000` for dev, `https://your-domain.com` for prod).
+     - Ensure **Authorized redirect URIs** includes the exact callback URL (e.g. `http://localhost:3000/api/auth/callback/google`).
+  3. For local development, use `http://localhost:3000` (not 127.0.0.1) and ensure the OAuth client has `http://localhost:3000` as an authorized origin.
+  4. If testing with a non-public app, add test users in the OAuth consent screen.
+- This is a Google policy limitation, not an application bug.
+
 ### Scripts Reference
 
 - `npm run db:fix-auth-schema` - Comprehensive fix (checks + applies migrations + regenerates client)

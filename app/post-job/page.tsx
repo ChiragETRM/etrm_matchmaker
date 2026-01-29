@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -111,6 +111,7 @@ export default function PostJobPage() {
   // No auth required - allow posting jobs without signing in
 
   const { register, handleSubmit, control, watch, setValue } = useForm({
+    mode: 'onSubmit',
     defaultValues: {
       title: '',
       companyName: '',
@@ -134,12 +135,14 @@ export default function PostJobPage() {
     },
   })
 
-  // Set recruiter email from session when authenticated (optional)
+  const hasSetRecruiterEmailFromSession = useRef(false)
+  // Set recruiter email from session once when authenticated (avoid overwriting user input)
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.email) {
+    if (status === 'authenticated' && session?.user?.email && !hasSetRecruiterEmailFromSession.current) {
       setValue('recruiterEmailTo', session.user.email)
+      hasSetRecruiterEmailFromSession.current = true
     }
-  }, [status, session, setValue])
+  }, [status, session?.user?.email, setValue])
 
   const {
     fields: gateRuleFields,
@@ -327,7 +330,13 @@ export default function PostJobPage() {
           <p className="text-gray-600">Find the right ETRM candidate, fast!</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleSubmit(onSubmit)(e)
+          }}
+          className="space-y-6"
+        >
           {/* Job Basics */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Job Basics</h2>
@@ -338,6 +347,8 @@ export default function PostJobPage() {
                 </label>
                 <input
                   {...register('title', { required: true })}
+                  aria-label="Job title"
+                  aria-required="true"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                   placeholder="e.g., Senior Endur Developer"
                   required
@@ -349,6 +360,7 @@ export default function PostJobPage() {
                 </label>
                 <input
                   {...register('companyName')}
+                  aria-label="Company name"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                   placeholder="Your company name"
                 />
@@ -359,6 +371,8 @@ export default function PostJobPage() {
                 </label>
                 <input
                   {...register('locationText', { required: true })}
+                  aria-label="Location"
+                  aria-required="true"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                   placeholder="e.g., London, UK"
                   required
@@ -371,6 +385,7 @@ export default function PostJobPage() {
                   </label>
                   <select
                     {...register('remotePolicy', { required: true })}
+                    aria-label="Remote policy"
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
                   >
                     <option value="ONSITE">Onsite</option>
@@ -384,6 +399,7 @@ export default function PostJobPage() {
                   </label>
                   <select
                     {...register('contractType', { required: true })}
+                    aria-label="Contract type"
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
                   >
                     <option value="PERM">Permanent</option>
@@ -668,6 +684,8 @@ export default function PostJobPage() {
             </div>
             <textarea
               {...register('jdText', { required: true })}
+              aria-label="Job description"
+              aria-required="true"
               className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none font-mono text-sm"
               rows={12}
               placeholder="Describe the role, responsibilities, and requirements. Use **text** for bold."
@@ -938,6 +956,8 @@ export default function PostJobPage() {
               <input
                 type="email"
                 {...register('recruiterEmailTo', { required: true })}
+                aria-label="Your email for candidate notifications"
+                aria-required="true"
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                 placeholder="your.email@example.com"
                 required
@@ -951,7 +971,9 @@ export default function PostJobPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+            aria-busy={isSubmitting}
+            aria-label={isSubmitting ? 'Creating job posting' : 'Create job posting'}
+            className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 disabled:from-blue-500 disabled:to-indigo-500 font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
           >
             {isSubmitting ? 'Creating Job...' : 'Create Job Posting'}
           </button>
