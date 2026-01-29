@@ -342,7 +342,7 @@ export default function SubmitApplicationPage() {
                         </p>
                       </div>
                       <div>
-                        <h3 className="font-semibold mb-2">Data retention (light but necessary)</h3>
+                        <h3 className="font-semibold mb-2">Data retention</h3>
                         <p className="text-gray-700">
                           I understand that my application data will be retained for a limited period in line with LearnETRM&apos;s data retention and privacy practices.
                         </p>
