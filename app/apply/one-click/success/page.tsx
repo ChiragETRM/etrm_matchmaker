@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -16,7 +16,7 @@ interface SimilarJob {
   roleCategory: string
 }
 
-export default function OneClickSuccessPage() {
+function OneClickSuccessContent() {
   const searchParams = useSearchParams()
   const jobId = searchParams.get('jobId')
   const [similarJobs, setSimilarJobs] = useState<SimilarJob[]>([])
@@ -90,5 +90,28 @@ export default function OneClickSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OneClickSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+          <div className="max-w-2xl w-full bg-white p-8 rounded-lg shadow text-center">
+            <h1 className="text-3xl font-bold mb-4 text-green-600">
+              Congratulations! You have applied for the role!
+            </h1>
+            <p className="text-gray-500 text-sm mb-8">
+              The recruiter will review your application and contact you directly
+              if you&apos;re a good fit for the role.
+            </p>
+            <p className="text-gray-400 text-sm">Loading…</p>
+          </div>
+        </div>
+      }
+    >
+      <OneClickSuccessContent />
+    </Suspense>
   )
 }
