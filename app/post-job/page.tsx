@@ -105,7 +105,8 @@ export default function PostJobPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [budgetValue, setBudgetValue] = useState(150)
+  const [budgetMinK, setBudgetMinK] = useState(70)
+  const [budgetMaxK, setBudgetMaxK] = useState(185)
 
   // No auth required - allow posting jobs without signing in
 
@@ -122,7 +123,8 @@ export default function PostJobPage() {
       roleCategoryOther: '',
       etrmPackages: [] as string[],
       commodityTags: [] as string[],
-      budget: '150000',
+      budgetMin: '70000',
+      budgetMax: '185000',
       budgetCurrency: 'USD',
       budgetIsEstimate: false,
       visaSponsorshipProvided: undefined as boolean | undefined,
@@ -274,8 +276,8 @@ export default function PostJobPage() {
         ...data,
         seniority,
         roleCategory: data.roleCategory === 'OTHER' ? data.roleCategoryOther : data.roleCategory,
-        budgetMin: parseFloat(data.budget),
-        budgetMax: parseFloat(data.budget),
+        budgetMin: parseFloat(data.budgetMin),
+        budgetMax: parseFloat(data.budgetMax),
         budgetPeriod: 'ANNUAL' as const,
         visaSponsorshipProvided: data.visaSponsorshipProvided,
         recruiterEmailCc: [],
@@ -498,35 +500,67 @@ export default function PostJobPage() {
             </div>
           </section>
 
-          {/* Budget */}
+          {/* Budget Range */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">Max Budget *</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">Budget Range *</h2>
             <div className="space-y-5">
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Budget Amount
+                    Min – Max (thousands)
                   </label>
                   <span className="text-lg font-bold text-blue-600">
-                    {budgetValue.toLocaleString()}k {watch('budgetCurrency')}
+                    {budgetMinK}k – {budgetMaxK}k {watch('budgetCurrency')}
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min="70"
-                  max="300"
-                  step="10"
-                  value={budgetValue}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value)
-                    setBudgetValue(value)
-                    setValue('budget', (value * 1000).toString())
-                  }}
-                  className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  style={{
-                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((budgetValue - 70) / (300 - 70)) * 100}%, #e5e7eb ${((budgetValue - 70) / (300 - 70)) * 100}%, #e5e7eb 100%)`
-                  }}
-                />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Min</label>
+                    <input
+                      type="range"
+                      min={70}
+                      max={300}
+                      step={10}
+                      value={budgetMinK}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value)
+                        const newMin = Math.min(value, budgetMaxK)
+                        const newMax = newMin > budgetMaxK ? newMin : budgetMaxK
+                        setBudgetMinK(newMin)
+                        setBudgetMaxK(newMax)
+                        setValue('budgetMin', (newMin * 1000).toString())
+                        setValue('budgetMax', (newMax * 1000).toString())
+                      }}
+                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      style={{
+                        background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((budgetMinK - 70) / (300 - 70)) * 100}%, #e5e7eb ${((budgetMinK - 70) / (300 - 70)) * 100}%, #e5e7eb 100%)`
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Max</label>
+                    <input
+                      type="range"
+                      min={70}
+                      max={300}
+                      step={10}
+                      value={budgetMaxK}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value)
+                        const newMax = Math.max(value, budgetMinK)
+                        const newMin = newMax < budgetMinK ? newMax : budgetMinK
+                        setBudgetMaxK(newMax)
+                        setBudgetMinK(newMin)
+                        setValue('budgetMax', (newMax * 1000).toString())
+                        setValue('budgetMin', (newMin * 1000).toString())
+                      }}
+                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      style={{
+                        background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((budgetMaxK - 70) / (300 - 70)) * 100}%, #e5e7eb ${((budgetMaxK - 70) / (300 - 70)) * 100}%, #e5e7eb 100%)`
+                      }}
+                    />
+                  </div>
+                </div>
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>70k</span>
                   <span>185k</span>
