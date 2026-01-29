@@ -295,29 +295,42 @@ function JobsContent() {
     orderIndex: number
   }>>([])
   const [prefillAnswers, setPrefillAnswers] = useState<Record<string, any>>({})
-  const [filters, setFilters] = useState({
-    remotePolicy: '',
-    contractType: '',
-    seniority: '',
-    roleCategory: '',
-    etrmPackage: '',
-    commodity: '',
+  const [filters, setFilters] = useState<{
+    remotePolicy: string[]
+    contractType: string[]
+    seniority: string[]
+    roleCategory: string[]
+    etrmPackage: string[]
+    commodity: string[]
+    nearMe: boolean
+  }>({
+    remotePolicy: [],
+    contractType: [],
+    seniority: [],
+    roleCategory: [],
+    etrmPackage: [],
+    commodity: [],
     nearMe: false,
   })
   const [detectedCountry, setDetectedCountry] = useState<string | null>(null)
 
-  const activeFilterCount = Object.entries(filters).filter(
-    ([key, value]) => (key === 'nearMe' ? value : value !== '')
-  ).length
+  const activeFilterCount =
+    (filters.nearMe ? 1 : 0) +
+    filters.remotePolicy.length +
+    filters.contractType.length +
+    filters.seniority.length +
+    filters.roleCategory.length +
+    filters.etrmPackage.length +
+    filters.commodity.length
 
   const clearFilters = () => {
     setFilters({
-      remotePolicy: '',
-      contractType: '',
-      seniority: '',
-      roleCategory: '',
-      etrmPackage: '',
-      commodity: '',
+      remotePolicy: [],
+      contractType: [],
+      seniority: [],
+      roleCategory: [],
+      etrmPackage: [],
+      commodity: [],
       nearMe: false,
     })
   }
@@ -327,12 +340,9 @@ function JobsContent() {
     setDetectedCountry(null)
     try {
       const params = new URLSearchParams()
-      Object.entries(filters).forEach(([key, value]) => {
-        if (key === 'nearMe') {
-          if (value) params.append('nearMe', '1')
-        } else if (value && typeof value === 'string') {
-          params.append(key, value)
-        }
+      if (filters.nearMe) params.append('nearMe', '1')
+      ;(['remotePolicy', 'contractType', 'seniority', 'roleCategory', 'etrmPackage', 'commodity'] as const).forEach((key) => {
+        filters[key].forEach((value) => params.append(key, value))
       })
 
       const response = await fetch(`/api/public/jobs?${params.toString()}`, {
@@ -393,11 +403,11 @@ function JobsContent() {
     </div>
   )
 
-  const FilterCheckbox = ({
+  const FilterMultiCheckbox = ({
     filterKey,
     options,
   }: {
-    filterKey: keyof typeof filters
+    filterKey: 'remotePolicy' | 'contractType' | 'seniority' | 'roleCategory' | 'etrmPackage' | 'commodity'
     options: { value: string; label: string }[]
   }) => (
     <div className="space-y-1">
@@ -407,16 +417,16 @@ function JobsContent() {
           className="flex items-center gap-2 cursor-pointer py-0.5 hover:text-indigo-600 transition-colors"
         >
           <input
-            type="radio"
-            name={filterKey}
-            checked={filters[filterKey] === option.value}
-            onChange={() =>
-              setFilters({
-                ...filters,
-                [filterKey]: filters[filterKey] === option.value ? '' : option.value,
-              })
-            }
-            className="w-3.5 h-3.5 text-indigo-600 border-gray-300 focus:ring-indigo-500 focus:ring-1"
+            type="checkbox"
+            checked={filters[filterKey].includes(option.value)}
+            onChange={(e) => {
+              const current = filters[filterKey]
+              const next = e.target.checked
+                ? [...current, option.value]
+                : current.filter((v) => v !== option.value)
+              setFilters({ ...filters, [filterKey]: next })
+            }}
+            className="w-3.5 h-3.5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 focus:ring-1"
           />
           <span className="text-sm text-gray-700">{option.label}</span>
         </label>
@@ -443,27 +453,27 @@ function JobsContent() {
       </FilterSection>
 
       <FilterSection title="Work Mode">
-        <FilterCheckbox filterKey="remotePolicy" options={FILTER_OPTIONS.remotePolicy} />
+        <FilterMultiCheckbox filterKey="remotePolicy" options={FILTER_OPTIONS.remotePolicy} />
       </FilterSection>
 
       <FilterSection title="Contract">
-        <FilterCheckbox filterKey="contractType" options={FILTER_OPTIONS.contractType} />
+        <FilterMultiCheckbox filterKey="contractType" options={FILTER_OPTIONS.contractType} />
       </FilterSection>
 
       <FilterSection title="Level">
-        <FilterCheckbox filterKey="seniority" options={FILTER_OPTIONS.seniority} />
+        <FilterMultiCheckbox filterKey="seniority" options={FILTER_OPTIONS.seniority} />
       </FilterSection>
 
       <FilterSection title="Role">
-        <FilterCheckbox filterKey="roleCategory" options={FILTER_OPTIONS.roleCategory} />
+        <FilterMultiCheckbox filterKey="roleCategory" options={FILTER_OPTIONS.roleCategory} />
       </FilterSection>
 
       <FilterSection title="ETRM Package">
-        <FilterCheckbox filterKey="etrmPackage" options={FILTER_OPTIONS.etrmPackage} />
+        <FilterMultiCheckbox filterKey="etrmPackage" options={FILTER_OPTIONS.etrmPackage} />
       </FilterSection>
 
       <FilterSection title="Commodity">
-        <FilterCheckbox filterKey="commodity" options={FILTER_OPTIONS.commodity} />
+        <FilterMultiCheckbox filterKey="commodity" options={FILTER_OPTIONS.commodity} />
       </FilterSection>
     </>
   )

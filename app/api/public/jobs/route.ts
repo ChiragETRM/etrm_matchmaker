@@ -13,12 +13,12 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const remotePolicy = searchParams.get('remotePolicy')
-    const contractType = searchParams.get('contractType')
-    const seniority = searchParams.get('seniority')
-    const roleCategory = searchParams.get('roleCategory')
-    const etrmPackage = searchParams.get('etrmPackage')
-    const commodity = searchParams.get('commodity')
+    const remotePolicy = searchParams.getAll('remotePolicy').filter(Boolean)
+    const contractType = searchParams.getAll('contractType').filter(Boolean)
+    const seniority = searchParams.getAll('seniority').filter(Boolean)
+    const roleCategory = searchParams.getAll('roleCategory').filter(Boolean)
+    const etrmPackage = searchParams.getAll('etrmPackage').filter(Boolean)
+    const commodity = searchParams.getAll('commodity').filter(Boolean)
     const nearMe = searchParams.get('nearMe') === '1'
 
     const now = new Date()
@@ -29,23 +29,23 @@ export async function GET(request: NextRequest) {
       archived: false,
     }
 
-    if (remotePolicy) {
-      (where as any).remotePolicy = remotePolicy
+    if (remotePolicy.length > 0) {
+      (where as any).remotePolicy = { in: remotePolicy }
     }
-    if (contractType) {
-      (where as any).contractType = contractType
+    if (contractType.length > 0) {
+      (where as any).contractType = { in: contractType }
     }
-    if (seniority) {
-      (where as any).seniority = seniority
+    if (seniority.length > 0) {
+      (where as any).seniority = { in: seniority }
     }
-    if (roleCategory) {
-      (where as any).roleCategory = roleCategory
+    if (roleCategory.length > 0) {
+      (where as any).roleCategory = { in: roleCategory }
     }
-    if (etrmPackage) {
-      (where as any).etrmPackages = { has: etrmPackage }
+    if (etrmPackage.length > 0) {
+      (where as any).etrmPackages = { hasSome: etrmPackage }
     }
-    if (commodity) {
-      (where as any).commodityTags = { has: commodity }
+    if (commodity.length > 0) {
+      (where as any).commodityTags = { hasSome: commodity }
     }
 
     let userCountryCode: string | null = null
