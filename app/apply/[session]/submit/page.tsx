@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
+import { PHONE_COUNTRIES, formatPhone } from '@/lib/phone-country'
 
 declare global {
   interface Window {
@@ -24,9 +25,11 @@ export default function SubmitApplicationPage() {
   const [sessionValid, setSessionValid] = useState<boolean | null>(null)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [showTermsModal, setShowTermsModal] = useState(false)
+  const [phoneCountryCode, setPhoneCountryCode] = useState('US')
+  const [phoneNational, setPhoneNational] = useState('')
   const session = params.session as string
 
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, formState: { errors }, setError } = useForm()
   const [turnstileLoaded, setTurnstileLoaded] = useState(false)
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ''
 
@@ -88,11 +91,17 @@ export default function SubmitApplicationPage() {
     setIsSubmitting(true)
 
     try {
+      const fullPhone = formatPhone(phoneCountryCode, phoneNational)
+      if (!fullPhone.trim()) {
+        setError('candidatePhone', { type: 'required', message: 'Phone number is required' })
+        setIsSubmitting(false)
+        return
+      }
       const formData = new FormData()
       formData.append('resume', resumeFile)
       formData.append('candidateName', data.candidateName)
       formData.append('candidateEmail', data.candidateEmail)
-      formData.append('candidatePhone', data.candidatePhone ?? '')
+      formData.append('candidatePhone', fullPhone)
       formData.append('candidateLinkedin', data.candidateLinkedin || '')
       formData.append('consent', 'true')
       formData.append('turnstileToken', turnstileToken || '')
@@ -214,19 +223,34 @@ export default function SubmitApplicationPage() {
                 <label className="block text-sm font-medium mb-1">
                   Phone *
                 </label>
-                <input
-                  type="tel"
-                  {...register('candidatePhone', {
-                  required: 'Phone number is required',
-                  minLength: { value: 1, message: 'Phone number is required' },
-                  validate: (v) => (v?.trim()?.length ? true : 'Phone number is required'),
-                })}
-                  className="w-full border rounded px-3 py-2"
-                  required
-                />
+                <div className="flex gap-2">
+                  <select
+                    id="phone-country"
+                    value={phoneCountryCode}
+                    onChange={(e) => setPhoneCountryCode(e.target.value)}
+                    className="w-[180px] shrink-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                    aria-label="Country code"
+                  >
+                    {PHONE_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.dialCode ? `${c.dialCode} ${c.name}` : c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={phoneNational}
+                    onChange={(e) => setPhoneNational(e.target.value)}
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder={phoneCountryCode === 'OTHER' ? 'e.g. +44 20 7123 4567' : '234 567 8900'}
+                    aria-label="Phone number"
+                    required
+                  />
+                </div>
                 {errors.candidatePhone && (
                   <p className="text-red-500 text-sm mt-1">
-                    Phone number is required
+                    {errors.candidatePhone.message as string}
                   </p>
                 )}
               </div>
