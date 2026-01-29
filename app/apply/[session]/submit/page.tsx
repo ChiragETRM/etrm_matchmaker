@@ -233,7 +233,7 @@ export default function SubmitApplicationPage() {
                   >
                     {PHONE_COUNTRIES.map((c) => (
                       <option key={c.code} value={c.code}>
-                        {c.flag} {c.dialCode ? `${c.dialCode} ${c.code}` : c.code}
+                        {c.flag} {c.dialCode || (c.code === 'OTHER' ? 'Other' : c.code)}
                       </option>
                     ))}
                   </select>
