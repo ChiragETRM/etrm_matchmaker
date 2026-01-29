@@ -2,7 +2,14 @@ import Link from 'next/link'
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center p-8">
+    <main className="relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center p-8">
+      {/* Beta label */}
+      <span
+        className="absolute top-6 right-6 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md ring-1 ring-white/20"
+        aria-label="Application is in beta"
+      >
+        Beta
+      </span>
       <div className="max-w-5xl w-full">
         {/* Header */}
         <div className="text-center mb-16">

@@ -500,70 +500,72 @@ export default function PostJobPage() {
             </div>
           </section>
 
-          {/* Budget Range */}
+          {/* Budget Range — single dual-thumb slider */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Budget Range *</h2>
             <div className="space-y-5">
               <div>
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex justify-between items-center mb-3">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Min – Max (thousands)
+                    Set your budget range
                   </label>
-                  <span className="text-lg font-bold text-blue-600">
+                  <span className="text-lg font-bold text-blue-600 tabular-nums">
                     {budgetMinK}k – {budgetMaxK}k {watch('budgetCurrency')}
                   </span>
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Min</label>
-                    <input
-                      type="range"
-                      min={70}
-                      max={300}
-                      step={10}
-                      value={budgetMinK}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value)
-                        const newMin = Math.min(value, budgetMaxK)
-                        const newMax = newMin > budgetMaxK ? newMin : budgetMaxK
-                        setBudgetMinK(newMin)
-                        setBudgetMaxK(newMax)
-                        setValue('budgetMin', (newMin * 1000).toString())
-                        setValue('budgetMax', (newMax * 1000).toString())
-                      }}
-                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                      style={{
-                        background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((budgetMinK - 70) / (300 - 70)) * 100}%, #e5e7eb ${((budgetMinK - 70) / (300 - 70)) * 100}%, #e5e7eb 100%)`
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Max</label>
-                    <input
-                      type="range"
-                      min={70}
-                      max={300}
-                      step={10}
-                      value={budgetMaxK}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value)
-                        const newMax = Math.max(value, budgetMinK)
-                        const newMin = newMax < budgetMinK ? newMax : budgetMinK
-                        setBudgetMaxK(newMax)
-                        setBudgetMinK(newMin)
-                        setValue('budgetMax', (newMax * 1000).toString())
-                        setValue('budgetMin', (newMin * 1000).toString())
-                      }}
-                      className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                      style={{
-                        background: `linear-gradient(to right, #2563eb 0%, #2563eb ${((budgetMaxK - 70) / (300 - 70)) * 100}%, #e5e7eb ${((budgetMaxK - 70) / (300 - 70)) * 100}%, #e5e7eb 100%)`
-                      }}
-                    />
-                  </div>
+                <div className="relative h-10 flex items-center">
+                  {/* Single track: gray bar */}
+                  <div
+                    className="absolute inset-x-0 h-3 rounded-full bg-gray-200"
+                    aria-hidden
+                  />
+                  {/* Filled segment between thumbs */}
+                  <div
+                    className="absolute h-3 rounded-full bg-blue-600 pointer-events-none transition-[left,right] duration-100"
+                    style={{
+                      left: `${((budgetMinK - 70) / 230) * 100}%`,
+                      right: `${100 - ((budgetMaxK - 70) / 230) * 100}%`,
+                    }}
+                    aria-hidden
+                  />
+                  {/* Min thumb — lower z so max thumb is on top when overlapping */}
+                  <input
+                    type="range"
+                    min={70}
+                    max={300}
+                    step={10}
+                    value={budgetMinK}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value)
+                      const newMin = Math.min(value, budgetMaxK)
+                      const newMax = newMin > budgetMaxK ? newMin : budgetMaxK
+                      setBudgetMinK(newMin)
+                      setBudgetMaxK(newMax)
+                      setValue('budgetMin', (newMin * 1000).toString())
+                      setValue('budgetMax', (newMax * 1000).toString())
+                    }}
+                    className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-1"
+                  />
+                  {/* Max thumb — higher z so it’s draggable when thumbs meet */}
+                  <input
+                    type="range"
+                    min={70}
+                    max={300}
+                    step={10}
+                    value={budgetMaxK}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value)
+                      const newMax = Math.max(value, budgetMinK)
+                      setBudgetMaxK(newMax)
+                      setBudgetMinK((prev) => (newMax < prev ? newMax : prev))
+                      setValue('budgetMax', (newMax * 1000).toString())
+                      setValue('budgetMin', (Math.min(budgetMinK, newMax) * 1000).toString())
+                    }}
+                    className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-2"
+                  />
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs text-gray-500 mt-2 px-0.5">
                   <span>70k</span>
-                  <span>185k</span>
                   <span>300k</span>
                 </div>
               </div>
