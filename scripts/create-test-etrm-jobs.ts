@@ -3,6 +3,21 @@ import { generateSlug } from '../lib/utils'
 
 const prisma = new PrismaClient()
 
+type TestQuestion = {
+  key: string
+  label: string
+  type: string
+  required: boolean
+  options?: unknown
+  orderIndex: number
+}
+type TestGateRule = {
+  questionKey: string
+  operator: string
+  value: unknown
+  orderIndex: number
+}
+
 const testJobs = [
   {
     title: 'ETRM Business Analyst - Endur',
@@ -379,7 +394,7 @@ async function main() {
           create: {
             version: 1,
             questions: {
-              create: jobData.questions.map((q) => ({
+              create: (jobData.questions as TestQuestion[]).map((q) => ({
                 key: q.key,
                 label: q.label,
                 type: q.type,
@@ -389,7 +404,7 @@ async function main() {
               })),
             },
             gateRules: {
-              create: jobData.gateRules.map((r) => ({
+              create: (jobData.gateRules as TestGateRule[]).map((r) => ({
                 questionKey: r.questionKey,
                 operator: r.operator,
                 valueJson: JSON.stringify(r.value),
