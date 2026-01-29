@@ -15,12 +15,16 @@ const authSecret = process.env.AUTH_SECRET
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
 
-// Validate required configuration
-if (!authSecret) {
-  throw new Error('AUTH_SECRET or NEXTAUTH_SECRET environment variable is required')
-}
-if (!googleClientId || !googleClientSecret) {
-  throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are required')
+// Validate required configuration at runtime, not during build
+// During `next build`, pages are pre-rendered and env vars may not be available
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
+if (!isBuildPhase) {
+  if (!authSecret) {
+    throw new Error('AUTH_SECRET or NEXTAUTH_SECRET environment variable is required')
+  }
+  if (!googleClientId || !googleClientSecret) {
+    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are required')
+  }
 }
 
 // Determine AUTH_URL - NextAuth v5 uses this via environment variables automatically

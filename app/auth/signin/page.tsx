@@ -63,7 +63,7 @@ function SignInContent() {
         })
       }
     }
-  }, [error, isClearingCookies])
+  }, [error, errorDetails, isClearingCookies])
 
   useEffect(() => {
     if (status === 'authenticated' && session) {

@@ -3,6 +3,17 @@
 
 import nodemailer from 'nodemailer'
 
+/** Escape HTML special characters to prevent XSS in email templates. */
+export function escapeHtml(str: string | null | undefined): string {
+  if (!str) return ''
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 interface EmailOptions {
   to: string
   cc?: string[]
@@ -206,13 +217,21 @@ async function sendViaSMTP(
 async function sendViaSendGrid(
   options: EmailOptions
 ): Promise<{ messageId: string; success: boolean; error?: string }> {
-  // TODO: Implement SendGrid
-  throw new Error('SendGrid not implemented')
+  console.error('SendGrid email provider is not yet implemented')
+  return {
+    messageId: '',
+    success: false,
+    error: 'SendGrid email provider is not yet implemented. Please use SMTP or Postmark.',
+  }
 }
 
 async function sendViaSES(
   options: EmailOptions
 ): Promise<{ messageId: string; success: boolean; error?: string }> {
-  // TODO: Implement AWS SES
-  throw new Error('AWS SES not implemented')
+  console.error('AWS SES email provider is not yet implemented')
+  return {
+    messageId: '',
+    success: false,
+    error: 'AWS SES email provider is not yet implemented. Please use SMTP or Postmark.',
+  }
 }

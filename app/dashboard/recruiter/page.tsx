@@ -65,6 +65,7 @@ export default function RecruiterDashboardPage() {
     if (status === 'authenticated' && email) {
       fetchData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, email])
 
   const updateStatus = async (

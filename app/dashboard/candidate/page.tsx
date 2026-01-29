@@ -136,6 +136,7 @@ export default function CandidateDashboardPage() {
         linkedin: '',
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, email, session?.user?.name])
 
   // Pre-populate form values when gate answers or questions are loaded

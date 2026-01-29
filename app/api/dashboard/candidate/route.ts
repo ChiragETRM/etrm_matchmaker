@@ -70,11 +70,19 @@ export async function GET(request: NextRequest) {
         : null,
     }))
 
-    const gateAnswersList = gateAnswers.map((ga) => ({
-      questionKey: ga.questionKey,
-      answer: JSON.parse(ga.answerJson),
-      updatedAt: ga.updatedAt,
-    }))
+    const gateAnswersList = gateAnswers.map((ga) => {
+      let answer: unknown = null
+      try {
+        answer = JSON.parse(ga.answerJson)
+      } catch {
+        answer = ga.answerJson
+      }
+      return {
+        questionKey: ga.questionKey,
+        answer,
+        updatedAt: ga.updatedAt,
+      }
+    })
 
     return NextResponse.json({ 
       applications: list,

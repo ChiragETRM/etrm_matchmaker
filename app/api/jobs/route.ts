@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateSlug } from '@/lib/utils'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const jobSchema = z.object({
@@ -47,6 +48,16 @@ const jobSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting to prevent spam job creation
+    const ip = request.headers.get('x-forwarded-for') || 'unknown'
+    const rateLimit = checkRateLimit(`create-job:${ip}`)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const data = jobSchema.parse(body)
 
@@ -150,16 +161,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Provide more detailed error messages
+    // Provide user-friendly error messages without leaking internals
     let errorMessage = 'Failed to create job'
-    let errorDetails = null
-    
+
     if (error instanceof Error) {
-      errorMessage = error.message
-      errorDetails = error.stack
-      
-      // Check for database connection errors - include more Prisma error codes
-      if (error.message.includes('Authentication failed') || 
+      if (error.message.includes('Authentication failed') ||
           error.message.includes('credentials') ||
           error.message.includes("Can't reach database server") ||
           error.message.includes('P1001') ||
@@ -168,22 +174,18 @@ export async function POST(request: NextRequest) {
           error.message.includes('connection') ||
           error.message.includes('ECONNREFUSED') ||
           error.message.includes('timeout')) {
-        errorMessage = 'Database connection failed. Please check your database credentials and connection string.'
-        // Always include details for connection errors to help debug
-        errorDetails = error.message
+        errorMessage = 'Database connection failed. Please try again later.'
       } else if (error.message.includes('Unique constraint') || error.message.includes('P2002')) {
         errorMessage = 'A job with this title already exists. Please use a different title.'
       } else if (error.message.includes('Foreign key constraint') || error.message.includes('P2003')) {
         errorMessage = 'Invalid data reference. Please check your form inputs.'
       }
     }
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: errorMessage,
-        // Include error details to help debug connection issues
-        ...(errorDetails && { details: errorDetails })
       },
       { status: 500 }
     )

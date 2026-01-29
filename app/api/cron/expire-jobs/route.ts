@@ -6,9 +6,15 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    // Optional: Add authentication header check
+    // Authenticate cron requests - require CRON_SECRET in production
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
+    const isProduction = process.env.NODE_ENV === 'production'
+
+    if (isProduction && !cronSecret) {
+      console.error('CRON_SECRET is not configured. Cron endpoint is disabled in production without it.')
+      return NextResponse.json({ error: 'Cron endpoint not configured' }, { status: 503 })
+    }
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

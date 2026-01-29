@@ -61,7 +61,9 @@ async function uploadToLocal(
   // In production, the actual file bytes would be stored in cloud storage
   const buffer = await file.arrayBuffer()
   const checksum = randomBytes(16).toString('hex')
-  const path = `${folder}/${Date.now()}-${file.name}`
+  // Sanitize file name to prevent path traversal
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `${folder}/${Date.now()}-${safeName}`
   
   // Convert buffer to base64 for storage
   const base64Data = Buffer.from(buffer).toString('base64')

@@ -28,7 +28,20 @@ export function evaluateGates(
 
   for (const rule of rules) {
     const answer = answers[rule.questionKey]
-    const expectedValue = JSON.parse(rule.valueJson)
+    let expectedValue: any
+    try {
+      expectedValue = JSON.parse(rule.valueJson)
+    } catch {
+      // If valueJson is not valid JSON, treat the rule as failed
+      failedRules.push(rule.questionKey)
+      failedRuleDetails.push({
+        questionKey: rule.questionKey,
+        operator: rule.operator,
+        expectedValue: rule.valueJson,
+        actualValue: answer,
+      })
+      continue
+    }
 
     let passed = false
 

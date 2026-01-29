@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { uploadFile } from '@/lib/storage'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, escapeHtml } from '@/lib/email'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { z } from 'zod'
 
@@ -75,6 +75,32 @@ export async function POST(
       turnstileToken: formData.get('turnstileToken') || undefined,
     })
 
+    // Verify Turnstile CAPTCHA token server-side if configured
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY
+    if (turnstileSecret && data.turnstileToken) {
+      try {
+        const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: data.turnstileToken,
+            remoteip: ip,
+          }),
+        })
+        const verifyData = await verifyRes.json() as { success: boolean }
+        if (!verifyData.success) {
+          return NextResponse.json(
+            { error: 'CAPTCHA verification failed. Please try again.' },
+            { status: 400 }
+          )
+        }
+      } catch (err) {
+        console.error('Turnstile verification error:', err)
+        // Allow submission if Turnstile service is down to avoid blocking legitimate users
+      }
+    }
+
     const session = await prisma.applicationSession.findUnique({
       where: { sessionToken: params.session },
       include: {
@@ -100,6 +126,20 @@ export async function POST(
       console.error(`Submit rejected: session ${params.session} has status '${session.status}', expected 'PASSED'`)
       return NextResponse.json(
         { error: `Application session is not eligible for submission (status: ${session.status})` },
+        { status: 400 }
+      )
+    }
+
+    // Check if candidate already applied to this job
+    const existingApplication = await prisma.application.findFirst({
+      where: {
+        jobId: session.jobId,
+        candidateEmail: data.candidateEmail,
+      },
+    })
+    if (existingApplication) {
+      return NextResponse.json(
+        { error: 'You have already applied to this job.' },
         { status: 400 }
       )
     }
@@ -170,13 +210,15 @@ export async function POST(
       const answersHtml = questions
         .map((q) => {
           const answer = answers[q.key]
-          let displayValue = answer
+          let displayValue: string
           if (Array.isArray(answer)) {
             displayValue = answer.join(', ')
           } else if (typeof answer === 'boolean') {
             displayValue = answer ? 'Yes' : 'No'
+          } else {
+            displayValue = answer != null ? String(answer) : 'N/A'
           }
-          return `<tr><td><strong>${q.label}</strong></td><td>${displayValue || 'N/A'}</td></tr>`
+          return `<tr><td><strong>${escapeHtml(q.label)}</strong></td><td>${escapeHtml(displayValue)}</td></tr>`
         })
         .join('')
 
@@ -189,22 +231,22 @@ export async function POST(
 
         <h3>Job</h3>
         <ul>
-          <li><strong>Role:</strong> ${session.job.title}</li>
-          <li><strong>Location:</strong> ${session.job.locationText}</li>
-          <li><strong>ETRM Packages:</strong> ${session.job.etrmPackages.join(', ') || 'N/A'}</li>
-          <li><strong>Link to job:</strong> <a href="${jobLink}">${jobLink}</a></li>
+          <li><strong>Role:</strong> ${escapeHtml(session.job.title)}</li>
+          <li><strong>Location:</strong> ${escapeHtml(session.job.locationText)}</li>
+          <li><strong>ETRM Packages:</strong> ${escapeHtml(session.job.etrmPackages.join(', ') || 'N/A')}</li>
+          <li><strong>Link to job:</strong> <a href="${escapeHtml(jobLink)}">${escapeHtml(jobLink)}</a></li>
         </ul>
 
         <h3>Candidate</h3>
         <ul>
-          <li><strong>Name:</strong> ${data.candidateName}</li>
-          <li><strong>Email:</strong> ${data.candidateEmail}</li>
-          <li><strong>Phone:</strong> ${data.candidatePhone || 'N/A'}</li>
-          <li><strong>LinkedIn:</strong> ${data.candidateLinkedin || 'N/A'}</li>
+          <li><strong>Name:</strong> ${escapeHtml(data.candidateName)}</li>
+          <li><strong>Email:</strong> ${escapeHtml(data.candidateEmail)}</li>
+          <li><strong>Phone:</strong> ${escapeHtml(data.candidatePhone || 'N/A')}</li>
+          <li><strong>LinkedIn:</strong> ${escapeHtml(data.candidateLinkedin || 'N/A')}</li>
         </ul>
 
         <h3>Resume</h3>
-        <p>CV attached to this email. <a href="${resumeUrl}">Or download here</a>.</p>
+        <p>CV attached to this email. <a href="${escapeHtml(resumeUrl)}">Or download here</a>.</p>
         ${answersHtml ? `
         <h3>Questions &amp; Answers</h3>
         <table border="1" cellpadding="5" cellspacing="0">

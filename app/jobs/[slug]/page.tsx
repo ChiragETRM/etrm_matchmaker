@@ -51,6 +51,7 @@ interface Job {
   createdAt: string
   expiresAt: string
   questionnaire: Questionnaire | null
+  hasApplied?: boolean
 }
 
 interface GateAnswerModalProps {
@@ -514,21 +515,29 @@ export default function JobDetailPage() {
           )}
 
           <div className="border-t pt-6">
-            <div className="flex gap-4">
-              <button
-                onClick={handleOneClickApply}
-                disabled={oneClickLoading || status === 'loading'}
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
-              >
-                {oneClickLoading ? 'Processing...' : '1 Click Apply'}
-              </button>
-              <button
-                onClick={handleApply}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-semibold"
-              >
-                Apply Now
-              </button>
-            </div>
+            {job.hasApplied ? (
+              <div className="text-center py-4">
+                <span className="inline-block px-6 py-3 bg-green-100 text-green-800 rounded-lg text-lg font-semibold">
+                  Already Applied
+                </span>
+              </div>
+            ) : (
+              <div className="flex gap-4">
+                <button
+                  onClick={handleOneClickApply}
+                  disabled={oneClickLoading || status === 'loading'}
+                  className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+                >
+                  {oneClickLoading ? 'Processing...' : '1 Click Apply'}
+                </button>
+                <button
+                  onClick={handleApply}
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-semibold"
+                >
+                  Apply Now
+                </button>
+              </div>
+            )}
           </div>
 
           <GateAnswerModal
