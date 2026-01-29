@@ -265,7 +265,20 @@ export default function FilterJobsPage() {
                           </label>
                         </div>
                       )}
-                      {(q.type === 'SINGLE_SELECT' || q.type === 'MULTI_SELECT') && (
+                      {q.type === 'SINGLE_SELECT' && (
+                        <select
+                          {...register(q.key)}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                        >
+                          <option value="">Select</option>
+                          {q.options?.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {q.type === 'MULTI_SELECT' && (
                         <div className="space-y-2 max-h-32 overflow-y-auto">
                           {q.options?.map((o) => (
                             <label key={o} className="flex items-center gap-2 text-sm">

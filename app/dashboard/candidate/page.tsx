@@ -5,6 +5,61 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+// Country codes with dial code and flag for phone input
+const PHONE_COUNTRIES: { code: string; dialCode: string; flag: string; name: string }[] = [
+  { code: 'US', dialCode: '+1', flag: '🇺🇸', name: 'United States' },
+  { code: 'CA', dialCode: '+1', flag: '🇨🇦', name: 'Canada' },
+  { code: 'GB', dialCode: '+44', flag: '🇬🇧', name: 'United Kingdom' },
+  { code: 'AU', dialCode: '+61', flag: '🇦🇺', name: 'Australia' },
+  { code: 'IN', dialCode: '+91', flag: '🇮🇳', name: 'India' },
+  { code: 'DE', dialCode: '+49', flag: '🇩🇪', name: 'Germany' },
+  { code: 'FR', dialCode: '+33', flag: '🇫🇷', name: 'France' },
+  { code: 'IE', dialCode: '+353', flag: '🇮🇪', name: 'Ireland' },
+  { code: 'NL', dialCode: '+31', flag: '🇳🇱', name: 'Netherlands' },
+  { code: 'ES', dialCode: '+34', flag: '🇪🇸', name: 'Spain' },
+  { code: 'IT', dialCode: '+39', flag: '🇮🇹', name: 'Italy' },
+  { code: 'SG', dialCode: '+65', flag: '🇸🇬', name: 'Singapore' },
+  { code: 'NZ', dialCode: '+64', flag: '🇳🇿', name: 'New Zealand' },
+  { code: 'JP', dialCode: '+81', flag: '🇯🇵', name: 'Japan' },
+  { code: 'BR', dialCode: '+55', flag: '🇧🇷', name: 'Brazil' },
+  { code: 'MX', dialCode: '+52', flag: '🇲🇽', name: 'Mexico' },
+  { code: 'ZA', dialCode: '+27', flag: '🇿🇦', name: 'South Africa' },
+  { code: 'PK', dialCode: '+92', flag: '🇵🇰', name: 'Pakistan' },
+  { code: 'PH', dialCode: '+63', flag: '🇵🇭', name: 'Philippines' },
+  { code: 'PL', dialCode: '+48', flag: '🇵🇱', name: 'Poland' },
+  { code: 'OTHER', dialCode: '', flag: '🌐', name: 'Other' },
+]
+
+function parsePhone(phone: string | null | undefined): { countryCode: string; national: string } {
+  if (!phone || typeof phone !== 'string') return { countryCode: 'US', national: '' }
+  const trimmed = phone.trim().replace(/\s+/g, ' ')
+  const withPlus = trimmed.startsWith('+') ? trimmed : `+${trimmed}`
+  const digitsOnly = withPlus.replace(/\D/g, '')
+  if (!digitsOnly) return { countryCode: 'US', national: '' }
+  // Match longest dial code first (excluding "OTHER")
+  const sorted = [...PHONE_COUNTRIES].filter(c => c.dialCode).sort((a, b) => b.dialCode.length - a.dialCode.length)
+  for (const c of sorted) {
+    const codeDigits = c.dialCode.replace(/\D/g, '')
+    if (digitsOnly.startsWith(codeDigits)) {
+      const national = digitsOnly.slice(codeDigits.length).replace(/(\d{3})(?=\d)/g, '$1 ').trim()
+      return { countryCode: c.code, national }
+    }
+  }
+  // Unrecognized dial code: show as Other with full number in national field
+  return { countryCode: 'OTHER', national: trimmed }
+}
+
+function formatPhone(countryCode: string, national: string): string {
+  const country = PHONE_COUNTRIES.find(c => c.code === countryCode)
+  const dial = country?.dialCode || ''
+  const trimmed = national.trim()
+  if (!trimmed) return ''
+  if (countryCode === 'OTHER') return trimmed.startsWith('+') ? trimmed : `+${trimmed.replace(/\D/g, '')}`
+  const digits = national.replace(/\D/g, '')
+  if (!digits) return ''
+  return `${dial} ${digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim()}`
+}
+
 interface AppItem {
   id: string
   candidateName: string
@@ -59,6 +114,8 @@ export default function CandidateDashboardPage() {
     phone: '',
     linkedin: '',
   })
+  const [phoneCountryCode, setPhoneCountryCode] = useState('US')
+  const [phoneNational, setPhoneNational] = useState('')
   const [currentResumeFileId, setCurrentResumeFileId] = useState<string | null>(null)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [updateSuccess, setUpdateSuccess] = useState(false)
@@ -83,11 +140,15 @@ export default function CandidateDashboardPage() {
       // Get profile info from first application if available
       if (data.applications && data.applications.length > 0) {
         const firstApp = data.applications[0]
+        const phone = firstApp.candidatePhone || ''
+        const parsed = parsePhone(phone)
         setProfileForm(prev => ({
           name: firstApp.candidateName || prev.name || session?.user?.name || '',
-          phone: firstApp.candidatePhone || prev.phone || '',
+          phone,
           linkedin: prev.linkedin || '',
         }))
+        setPhoneCountryCode(parsed.countryCode)
+        setPhoneNational(parsed.national)
         // Find resume file ID from applications
         const appWithResume = data.applications.find((a: AppItem) => a.resumeUrl)
         if (appWithResume && appWithResume.resumeUrl) {
@@ -198,7 +259,7 @@ export default function CandidateDashboardPage() {
     try {
       const updateData: any = {}
       if (profileForm.name) updateData.name = profileForm.name
-      if (profileForm.phone !== undefined) updateData.phone = profileForm.phone || null
+      updateData.phone = formatPhone(phoneCountryCode, phoneNational) || null
       if (profileForm.linkedin !== undefined) updateData.linkedin = profileForm.linkedin || null
       if (additionalData?.resumeFileId) updateData.resumeFileId = additionalData.resumeFileId
 
@@ -359,14 +420,30 @@ export default function CandidateDashboardPage() {
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                   Phone Number
                 </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={profileForm.phone}
-                  onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="+1 234 567 8900"
-                />
+                <div className="flex gap-2">
+                  <select
+                    id="phone-country"
+                    value={phoneCountryCode}
+                    onChange={(e) => setPhoneCountryCode(e.target.value)}
+                    className="w-[180px] shrink-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                    aria-label="Country code"
+                  >
+                    {PHONE_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.dialCode ? `${c.dialCode} ${c.name}` : c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={phoneNational}
+                    onChange={(e) => setPhoneNational(e.target.value)}
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder={phoneCountryCode === 'OTHER' ? 'e.g. +44 20 7123 4567' : '234 567 8900'}
+                    aria-label="Phone number"
+                  />
+                </div>
               </div>
               <div>
                 <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 mb-1">
