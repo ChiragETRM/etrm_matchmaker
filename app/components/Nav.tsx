@@ -7,11 +7,12 @@ export default function Nav() {
   const { data: session, status } = useSession()
 
   return (
-    <nav className="border-b border-gray-200 bg-white/80 backdrop-blur">
+    <nav className="border-b border-gray-200 bg-white/80 backdrop-blur" aria-label="Main navigation">
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
         <Link
           href="/"
           className="text-lg font-semibold text-gray-900 hover:text-indigo-600 transition mr-auto"
+          aria-label="Hand Picked ETRM/CTRM Jobs home"
         >
           Hand Picked ETRM/CTRM Jobs
         </Link>
@@ -19,24 +20,29 @@ export default function Nav() {
           <Link
             href="/jobs"
             className="text-gray-600 hover:text-indigo-600 font-medium transition"
+            aria-label="Browse jobs"
           >
             Browse Jobs
           </Link>
           <Link
             href="/filter-jobs"
             className="text-gray-600 hover:text-indigo-600 font-medium transition"
+            aria-label="Eligible jobs"
           >
             Eligible Jobs
           </Link>
           <Link
             href="/post-job"
+            prefetch={false}
             className="text-gray-600 hover:text-indigo-600 font-medium transition"
+            aria-label="Post a job"
           >
             Post Job
           </Link>
           <Link
             href="/dashboard"
             className="text-gray-600 hover:text-indigo-600 font-medium transition"
+            aria-label="Dashboards"
           >
             Dashboards
           </Link>
@@ -69,6 +75,7 @@ export default function Nav() {
             <Link
               href="/auth/signin"
               className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition"
+              aria-label="Sign in"
             >
               Sign in
             </Link>

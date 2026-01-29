@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+
+const FORM_STORAGE_KEY = 'post-job-draft'
 
 interface GateRule {
   type: 'years_experience' | 'language' | 'commodity' | 'work_permit' | 'other'
@@ -101,16 +103,26 @@ You break things before traders do. You make sure **Endur** behaves exactly as t
 • Prior front-office or operations exposure.`
 }
 
+function getStoredDraft() {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(FORM_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 export default function PostJobPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [budgetMinK, setBudgetMinK] = useState(70)
   const [budgetMaxK, setBudgetMaxK] = useState(185)
+  const submitInProgress = useRef(false)
 
-  // No auth required - allow posting jobs without signing in
-
-  const { register, handleSubmit, control, watch, setValue } = useForm({
+  const { register, handleSubmit, control, watch, setValue, reset } = useForm({
+    mode: 'onSubmit',
     defaultValues: {
       title: '',
       companyName: '',
@@ -134,12 +146,74 @@ export default function PostJobPage() {
     },
   })
 
-  // Set recruiter email from session when authenticated (optional)
+  // Set recruiter email from session when authenticated (optional); only if not already set from draft
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
       setValue('recruiterEmailTo', session.user.email)
     }
   }, [status, session, setValue])
+
+  // Restore draft from sessionStorage after mount (survives remount/hydration)
+  useEffect(() => {
+    const draft = getStoredDraft()
+    if (draft && (draft.title || draft.jdText || draft.recruiterEmailTo)) {
+      reset({
+        title: draft.title ?? '',
+        companyName: draft.companyName ?? '',
+        locationText: draft.locationText ?? '',
+        countryCode: draft.countryCode ?? '',
+        remotePolicy: (draft.remotePolicy as 'REMOTE') ?? 'REMOTE',
+        contractType: (draft.contractType as 'PERM') ?? 'PERM',
+        experienceRange: (draft.experienceRange as '2-5') ?? '2-5',
+        roleCategory: (draft.roleCategory as 'ETRM_DEV') ?? 'ETRM_DEV',
+        roleCategoryOther: draft.roleCategoryOther ?? '',
+        etrmPackages: (draft.etrmPackages as string[]) ?? [],
+        commodityTags: (draft.commodityTags as string[]) ?? [],
+        budgetMin: draft.budgetMin ?? '70000',
+        budgetMax: draft.budgetMax ?? '185000',
+        budgetCurrency: draft.budgetCurrency ?? 'USD',
+        budgetIsEstimate: draft.budgetIsEstimate ?? false,
+        visaSponsorshipProvided: draft.visaSponsorshipProvided as boolean | undefined,
+        jdText: draft.jdText ?? '',
+        recruiterEmailTo: draft.recruiterEmailTo ?? '',
+        gateRules: (draft.gateRules as GateRule[]) ?? [],
+      })
+      const minK = Math.round(Number(draft.budgetMin ?? 70000) / 1000)
+      const maxK = Math.round(Number(draft.budgetMax ?? 185000) / 1000)
+      if (minK >= 70 && minK <= 300) setBudgetMinK(minK)
+      if (maxK >= 70 && maxK <= 300) setBudgetMaxK(maxK)
+    }
+  }, [reset])
+
+  // Persist form to sessionStorage on change (debounced) to survive remounts
+  const formValues = watch()
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const payload = {
+        title: formValues.title,
+        companyName: formValues.companyName,
+        locationText: formValues.locationText,
+        countryCode: formValues.countryCode,
+        remotePolicy: formValues.remotePolicy,
+        contractType: formValues.contractType,
+        experienceRange: formValues.experienceRange,
+        roleCategory: formValues.roleCategory,
+        roleCategoryOther: formValues.roleCategoryOther,
+        etrmPackages: formValues.etrmPackages,
+        commodityTags: formValues.commodityTags,
+        budgetMin: formValues.budgetMin,
+        budgetMax: formValues.budgetMax,
+        budgetCurrency: formValues.budgetCurrency,
+        budgetIsEstimate: formValues.budgetIsEstimate,
+        visaSponsorshipProvided: formValues.visaSponsorshipProvided,
+        jdText: formValues.jdText,
+        recruiterEmailTo: formValues.recruiterEmailTo,
+        gateRules: formValues.gateRules,
+      }
+      sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(payload))
+    }, 500)
+    return () => clearTimeout(t)
+  }, [formValues])
 
   const {
     fields: gateRuleFields,
@@ -170,6 +244,8 @@ export default function PostJobPage() {
   }
 
   const onSubmit = async (data: any) => {
+    if (submitInProgress.current) return
+    submitInProgress.current = true
     setIsSubmitting(true)
     try {
       // Convert experience range to seniority for backward compatibility
@@ -295,7 +371,9 @@ export default function PostJobPage() {
       const result = await response.json()
 
       if (result.success) {
+        sessionStorage.removeItem(FORM_STORAGE_KEY)
         router.push(`/post-job/success?slug=${result.job.slug}&expiresAt=${result.job.expiresAt}`)
+        return
       } else {
         // Show detailed error message
         let errorMsg = result.error || 'Unknown error'
@@ -312,6 +390,7 @@ export default function PostJobPage() {
       alert('Failed to create job: ' + errorMessage)
     } finally {
       setIsSubmitting(false)
+      submitInProgress.current = false
     }
   }
 
@@ -341,6 +420,8 @@ export default function PostJobPage() {
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                   placeholder="e.g., Senior Endur Developer"
                   required
+                  aria-label="Job title"
+                  aria-required="true"
                 />
               </div>
               <div>
@@ -351,6 +432,7 @@ export default function PostJobPage() {
                   {...register('companyName')}
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                   placeholder="Your company name"
+                  aria-label="Company name"
                 />
               </div>
               <div>
@@ -362,6 +444,8 @@ export default function PostJobPage() {
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                   placeholder="e.g., London, UK"
                   required
+                  aria-label="Job location"
+                  aria-required="true"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -941,6 +1025,8 @@ export default function PostJobPage() {
                 className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                 placeholder="your.email@example.com"
                 required
+                aria-label="Your email for candidate notifications"
+                aria-required="true"
               />
               <p className="text-sm text-gray-500 mt-2">
                 Candidates will be notified to this email address.
@@ -951,7 +1037,8 @@ export default function PostJobPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+            className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 disabled:bg-gray-500 disabled:cursor-not-allowed font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+            aria-label={isSubmitting ? 'Creating job posting' : 'Create job posting'}
           >
             {isSubmitting ? 'Creating Job...' : 'Create Job Posting'}
           </button>

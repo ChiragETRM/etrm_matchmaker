@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -241,17 +241,14 @@ export default function JobDetailPage() {
   const [jobAlertEmail, setJobAlertEmail] = useState('')
   const [jobAlertLoading, setJobAlertLoading] = useState(false)
   const [jobAlertSuccess, setJobAlertSuccess] = useState(false)
+  const [jobAlertError, setJobAlertError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (params.slug) {
-      fetchJob(params.slug as string)
-    }
-  }, [params.slug])
+  const slug = typeof params.slug === 'string' ? params.slug : params.slug?.[0]
 
-  const fetchJob = async (slug: string) => {
+  const fetchJob = useCallback(async (slugParam: string) => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/public/jobs/${slug}`, {
+      const response = await fetch(`/api/public/jobs/${slugParam}`, {
         cache: 'no-store',
         headers: { Pragma: 'no-cache', 'Cache-Control': 'no-cache' },
       })
@@ -266,7 +263,13 @@ export default function JobDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (slug) {
+      fetchJob(slug)
+    }
+  }, [slug, fetchJob])
 
   const handleApply = () => {
     if (job) {
@@ -357,6 +360,7 @@ export default function JobDetailPage() {
 
     setJobAlertLoading(true)
     setJobAlertSuccess(false)
+    setJobAlertError(null)
     try {
       const response = await fetch('/api/public/job-alerts/subscribe', {
         method: 'POST',
@@ -369,13 +373,15 @@ export default function JobDetailPage() {
       if (response.ok && data.success) {
         setJobAlertSuccess(true)
         setJobAlertEmail('')
-        setTimeout(() => setJobAlertSuccess(false), 5000)
+        setJobAlertError(null)
+        setTimeout(() => setJobAlertSuccess(false), 8000)
       } else {
-        alert(data.error || 'Failed to subscribe. Please try again.')
+        const errMsg = data.error || 'Failed to subscribe. Please try again.'
+        setJobAlertError(errMsg)
       }
     } catch (error) {
       console.error('Error subscribing to job alerts:', error)
-      alert('An error occurred. Please try again.')
+      setJobAlertError('An error occurred. Please try again.')
     } finally {
       setJobAlertLoading(false)
     }
@@ -403,7 +409,7 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 py-12 px-4" key={slug ?? 'job-detail'}>
       <div className="max-w-4xl mx-auto">
         <div className="bg-white p-8 rounded-lg shadow">
           <div className="mb-6">
@@ -487,27 +493,50 @@ export default function JobDetailPage() {
                   Stay updated with the latest job opportunities matching your preferences.
                 </p>
                 {jobAlertSuccess ? (
-                  <div className="text-green-600 text-sm font-medium">
+                  <div
+                    className="text-green-700 text-sm font-medium p-3 bg-green-50 border border-green-200 rounded-lg"
+                    role="status"
+                    aria-live="polite"
+                  >
                     ✓ Successfully subscribed! You&apos;ll receive job alerts via email.
                   </div>
                 ) : (
-                  <form onSubmit={handleJobAlertSubmit} className="flex gap-2">
-                    <input
-                      type="email"
-                      value={jobAlertEmail}
-                      onChange={(e) => setJobAlertEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="submit"
-                      disabled={jobAlertLoading}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                    >
-                      {jobAlertLoading ? 'Subscribing...' : 'Subscribe'}
-                    </button>
-                  </form>
+                  <>
+                    {jobAlertError && (
+                      <div
+                        id="job-alert-error"
+                        className="text-red-700 text-sm font-medium p-3 bg-red-50 border border-red-200 rounded-lg mb-3"
+                        role="alert"
+                        aria-live="assertive"
+                      >
+                        {jobAlertError}
+                      </div>
+                    )}
+                    <form onSubmit={handleJobAlertSubmit} className="flex gap-2">
+                      <input
+                        type="email"
+                        value={jobAlertEmail}
+                        onChange={(e) => {
+                          setJobAlertEmail(e.target.value)
+                          setJobAlertError(null)
+                        }}
+                        placeholder="Enter your email"
+                        required
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        aria-label="Email for job alerts"
+                        aria-invalid={!!jobAlertError}
+                        aria-describedby={jobAlertError ? 'job-alert-error' : undefined}
+                      />
+                      <button
+                        type="submit"
+                        disabled={jobAlertLoading}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70 disabled:bg-gray-500 disabled:cursor-not-allowed font-medium"
+                        aria-label={jobAlertLoading ? 'Subscribing to job alerts' : 'Subscribe to job alerts'}
+                      >
+                        {jobAlertLoading ? 'Subscribing...' : 'Subscribe'}
+                      </button>
+                    </form>
+                  </>
                 )}
               </div>
             </div>
@@ -518,13 +547,15 @@ export default function JobDetailPage() {
               <button
                 onClick={handleOneClickApply}
                 disabled={oneClickLoading || status === 'loading'}
-                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-70 disabled:bg-gray-500 disabled:cursor-not-allowed text-lg font-semibold"
+                aria-label={oneClickLoading ? 'Processing application' : '1 Click Apply'}
               >
                 {oneClickLoading ? 'Processing...' : '1 Click Apply'}
               </button>
               <button
                 onClick={handleApply}
                 className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg font-semibold"
+                aria-label="Apply now"
               >
                 Apply Now
               </button>

@@ -136,6 +136,16 @@ To enable Google Sign-In:
      - `https://your-production-domain.com/api/auth/callback/google` (for production)
 7. Copy the **Client ID** and **Client Secret** to your `.env` file
 
+**If you see "Couldn't sign you in – this browser or app may not be secure":**
+
+- In [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **OAuth consent screen**:
+  - For local/testing, set **User type** to **External** and add your Google account under **Test users** (or keep **Internal** if using a Workspace org).
+  - Ensure **Authorized redirect URIs** under **Credentials** → your OAuth client includes exactly:
+    - `http://localhost:3000/api/auth/callback/google` (no trailing slash)
+  - Ensure **Authorized JavaScript origins** includes `http://localhost:3000`.
+- Use a normal browser (Chrome, Firefox, Edge) and avoid embedded or "in-app" browsers.
+- In production, use HTTPS and add your production URL to Authorized origins and redirect URIs.
+
 **Generate AUTH_SECRET:**
 
 ```bash
