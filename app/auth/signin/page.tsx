@@ -40,7 +40,7 @@ function SignInContent() {
   const error = searchParams.get('error')
   const errorDetails = searchParams.get('details')
   const [isClearingCookies, setIsClearingCookies] = useState(false)
-  const [jobAlertPolicyAgreed, setJobAlertPolicyAgreed] = useState(false)
+  const [termsAgreed, setTermsAgreed] = useState(false)
 
   // Handle errors by clearing cookies and retrying
   useEffect(() => {
@@ -69,8 +69,8 @@ function SignInContent() {
     if (status === 'authenticated' && session) {
       // Check if job alert policy agreement needs to be saved
       const savePolicyAgreement = async () => {
-        const policyAgreed = searchParams.get('jobAlertPolicyAgreed') === 'true' || 
-                            sessionStorage.getItem('jobAlertPolicyAgreed') === 'true'
+        const policyAgreed = searchParams.get('termsAgreed') === 'true' || 
+                            sessionStorage.getItem('termsAgreed') === 'true'
         
         if (policyAgreed) {
           try {
@@ -78,7 +78,7 @@ function SignInContent() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
             })
-            sessionStorage.removeItem('jobAlertPolicyAgreed')
+            sessionStorage.removeItem('termsAgreed')
           } catch (error) {
             console.error('Error saving job alert policy agreement:', error)
           }
@@ -101,7 +101,7 @@ function SignInContent() {
           decodedUrl = urlObj.pathname + urlObj.search
           // Remove jobAlertPolicyAgreed from query params before redirecting
           const url = new URL(decodedUrl, window.location.origin)
-          url.searchParams.delete('jobAlertPolicyAgreed')
+          url.searchParams.delete('termsAgreed')
           decodedUrl = url.pathname + url.search
         } else {
           // Different origin - default to dashboard for safety
@@ -123,8 +123,8 @@ function SignInContent() {
   }, [status, session, callbackUrl, router, searchParams])
 
   const handleSignIn = async () => {
-    if (!jobAlertPolicyAgreed) {
-      alert('Please agree to receive job alerts from our platform to continue.')
+    if (!termsAgreed) {
+      alert('Please agree to the LearnETRM Terms & Conditions to continue.')
       return
     }
 
@@ -133,11 +133,11 @@ function SignInContent() {
     setIsClearingCookies(true)
     
     try {
-      // Store the policy agreement in sessionStorage to pass to the callback
-      sessionStorage.setItem('jobAlertPolicyAgreed', 'true')
+      // Store the terms agreement in sessionStorage to pass to the callback
+      sessionStorage.setItem('termsAgreed', 'true')
       
       await signIn('google', { 
-        callbackUrl: `${callbackUrl}?jobAlertPolicyAgreed=true`,
+        callbackUrl: `${callbackUrl}?termsAgreed=true`,
         redirect: true,
       })
     } catch (err) {
@@ -228,29 +228,49 @@ function SignInContent() {
           )}
 
           <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={jobAlertPolicyAgreed}
-                  onChange={(e) => setJobAlertPolicyAgreed(e.target.checked)}
-                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  required
-                />
-                <div className="flex-1">
+            {/* Readable Terms & Conditions */}
+            <div className="rounded-lg border border-gray-200 bg-gray-50">
+              <div className="max-h-48 overflow-y-auto p-4 text-sm text-gray-700 leading-relaxed">
+                <p className="font-semibold text-gray-900 mb-2">LearnETRM – Platform Terms & Candidate Representation</p>
+                <p className="mb-3">By signing in, applying for a role, or submitting information on LearnETRM (&quot;the Platform&quot;), you agree to the following terms.</p>
+                <p className="font-medium text-gray-800 mb-1">1. Platform Role</p>
+                <p className="mb-3">LearnETRM operates as a curated job discovery and candidate screening platform focused on Energy Trading & Risk Management (ETRM / CTRM) roles. LearnETRM is not an employer and does not make hiring decisions.</p>
+                <p className="font-medium text-gray-800 mb-1">2. Candidate Consent & Representation</p>
+                <p className="mb-3">By applying to a job through LearnETRM, you explicitly authorize LearnETRM to: represent you solely for that specific job application; share your profile, CV, and application responses only with the hiring company or recruiter associated with that role; communicate with the recruiter on your behalf regarding that application. This representation is non-exclusive beyond the specific role and does not restrict you from applying to other roles elsewhere.</p>
+                <p className="font-medium text-gray-800 mb-1">3. No Parallel Submissions</p>
+                <p className="mb-3">You confirm that you have not applied independently to the same role through another channel (company website, recruiter, LinkedIn, or job board) prior to submitting via LearnETRM. If a duplicate application is discovered, LearnETRM reserves the right to withdraw or invalidate the application without notice.</p>
+                <p className="font-medium text-gray-800 mb-1">4. Accuracy of Information</p>
+                <p className="mb-3">You confirm that all information provided by you is true, accurate, and complete. Any false, misleading, or materially incorrect information may result in immediate removal from the platform and withdrawal of your application.</p>
+                <p className="font-medium text-gray-800 mb-1">5. Recruiter Acknowledgement</p>
+                <p className="mb-3">Recruiters using LearnETRM acknowledge that: candidate submissions are curated and pre-screened; candidates submitted via LearnETRM are represented by LearnETRM for that role; any engagement, interview, or hiring resulting from the submission is deemed to originate from LearnETRM.</p>
+                <p className="font-medium text-gray-800 mb-1">6. No Hiring Guarantee</p>
+                <p className="mb-3">LearnETRM does not guarantee interviews, offers, or responses from recruiters. Hiring decisions remain entirely with the employer.</p>
+                <p className="font-medium text-gray-800 mb-1">7. Communication Consent</p>
+                <p className="mb-3">By signing in or applying, you consent to receive job-related emails from LearnETRM, including: application confirmations; status updates; new roles matching your profile. You may unsubscribe from non-essential notifications at any time.</p>
+                <p className="font-medium text-gray-800 mb-1">8. Data Usage & Privacy</p>
+                <p className="mb-3">Your data is used solely for recruitment-related purposes and handled in accordance with applicable data protection laws. LearnETRM does not sell candidate data or share it outside the scope of recruitment.</p>
+                <p className="font-medium text-gray-800 mb-1">9. Platform Rights</p>
+                <p className="mb-2">LearnETRM reserves the right to: modify or discontinue the platform; remove users or applications that violate these terms; update these terms periodically. Continued use of the platform constitutes acceptance of updated terms.</p>
+              </div>
+              <div className="border-t border-gray-200 bg-white p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shrink-0"
+                    required
+                  />
                   <span className="text-sm font-medium text-gray-900">
-                    I agree to receive job alerts from this platform
+                    I agree to the LearnETRM Terms & Conditions and consent to representation for this job application
                   </span>
-                  <p className="text-xs text-gray-600 mt-1">
-                    By signing in, you consent to receive email notifications about new job opportunities that match your profile and preferences.
-                  </p>
-                </div>
-              </label>
+                </label>
+              </div>
             </div>
             
             <button
               onClick={handleSignIn}
-              disabled={isClearingCookies || !jobAlertPolicyAgreed}
+              disabled={isClearingCookies || !termsAgreed}
               className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
