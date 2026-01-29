@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 interface SimilarJob {
@@ -16,20 +16,20 @@ interface SimilarJob {
   roleCategory: string
 }
 
-export default function ApplicationSuccessPage() {
-  const params = useParams()
-  const session = params.session as string
+export default function OneClickSuccessPage() {
+  const searchParams = useSearchParams()
+  const jobId = searchParams.get('jobId')
   const [similarJobs, setSimilarJobs] = useState<SimilarJob[]>([])
   const [similarLoading, setSimilarLoading] = useState(true)
 
   useEffect(() => {
-    if (!session) return
-    fetch(`/api/apply/similar-jobs?session=${encodeURIComponent(session)}&limit=3`)
+    if (!jobId) return
+    fetch(`/api/apply/similar-jobs?jobId=${encodeURIComponent(jobId)}&limit=3`)
       .then((r) => r.json())
       .then((data) => setSimilarJobs(data.jobs ?? []))
       .catch(() => setSimilarJobs([]))
       .finally(() => setSimilarLoading(false))
-  }, [session])
+  }, [jobId])
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
@@ -70,7 +70,7 @@ export default function ApplicationSuccessPage() {
             </ul>
           </div>
         )}
-        {similarLoading && session && (
+        {similarLoading && jobId && (
           <p className="text-gray-400 text-sm mt-4">Loading similar roles…</p>
         )}
 

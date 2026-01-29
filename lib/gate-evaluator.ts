@@ -34,7 +34,12 @@ export function evaluateGates(
 
     switch (rule.operator) {
       case 'EQ':
-        passed = answer === expectedValue
+        // Support multi-select: pass if user's selected values include the job's expected value
+        if (Array.isArray(answer)) {
+          passed = answer.includes(expectedValue)
+        } else {
+          passed = answer === expectedValue
+        }
         break
 
       case 'GTE':
@@ -61,7 +66,12 @@ export function evaluateGates(
         break
 
       case 'IN':
-        if (Array.isArray(expectedValue)) {
+        // Support multi-select: pass if any of user's selected values is in the job's expected set
+        if (Array.isArray(answer)) {
+          passed = Array.isArray(expectedValue)
+            ? expectedValue.some((val) => answer.includes(val))
+            : answer.includes(expectedValue)
+        } else if (Array.isArray(expectedValue)) {
           passed = expectedValue.includes(answer)
         } else {
           passed = false

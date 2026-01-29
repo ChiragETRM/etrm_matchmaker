@@ -92,7 +92,7 @@ export default function SubmitApplicationPage() {
       formData.append('resume', resumeFile)
       formData.append('candidateName', data.candidateName)
       formData.append('candidateEmail', data.candidateEmail)
-      formData.append('candidatePhone', data.candidatePhone || '')
+      formData.append('candidatePhone', data.candidatePhone ?? '')
       formData.append('candidateLinkedin', data.candidateLinkedin || '')
       formData.append('consent', 'true')
       formData.append('turnstileToken', turnstileToken || '')
@@ -212,13 +212,19 @@ export default function SubmitApplicationPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Phone
+                  Phone *
                 </label>
                 <input
                   type="tel"
-                  {...register('candidatePhone')}
+                  {...register('candidatePhone', { required: true })}
                   className="w-full border rounded px-3 py-2"
+                  required
                 />
+                {errors.candidatePhone && (
+                  <p className="text-red-500 text-sm mt-1">
+                    Phone number is required
+                  </p>
+                )}
               </div>
 
               <div>

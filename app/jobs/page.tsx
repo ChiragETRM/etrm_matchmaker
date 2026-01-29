@@ -713,7 +713,7 @@ function JobsContent() {
                             }
 
                             if (response.status === 200 && data.success) {
-                              router.push(`/dashboard/candidate`)
+                              router.push(`/apply/one-click/success?jobId=${selectedJob.id}`)
                               return
                             }
 
@@ -725,7 +725,11 @@ function JobsContent() {
                               return
                             }
 
-                            alert(data.error || 'Failed to submit application. Please try again.')
+                            const msg = data.error || 'Failed to submit application. Please try again.'
+                            alert(msg)
+                            if (msg.includes('No CV found')) {
+                              router.push('/dashboard/candidate')
+                            }
                           } catch (error) {
                             console.error('Error in one-click apply:', error)
                             alert('An error occurred. Please try again.')
@@ -769,7 +773,7 @@ function JobsContent() {
 
                           if (response.ok && data.success) {
                             setShowGateModal(false)
-                            router.push(`/dashboard/candidate`)
+                            router.push(`/apply/one-click/success?jobId=${selectedJob.id}`)
                           } else {
                             alert(data.error || 'Failed to submit application. Please try again.')
                             setOneClickLoading(false)

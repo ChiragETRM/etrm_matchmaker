@@ -300,8 +300,8 @@ export default function JobDetailPage() {
       }
 
       if (response.status === 200 && data.success) {
-        // Application submitted successfully
-        router.push(`/dashboard/candidate`)
+        // Application submitted successfully → show success page with similar roles
+        router.push(`/apply/one-click/success?jobId=${job.id}`)
         return
       }
 
@@ -314,8 +314,12 @@ export default function JobDetailPage() {
         return
       }
 
-      // Error case
-      alert(data.error || 'Failed to submit application. Please try again.')
+      // Error case: show message, then redirect to dashboard if No CV so they can upload
+      const msg = data.error || 'Failed to submit application. Please try again.'
+      alert(msg)
+      if (msg.includes('No CV found')) {
+        router.push('/dashboard/candidate')
+      }
     } catch (error) {
       console.error('Error in one-click apply:', error)
       alert('An error occurred. Please try again.')
@@ -339,7 +343,7 @@ export default function JobDetailPage() {
 
       if (response.ok && data.success) {
         setShowGateModal(false)
-        router.push(`/dashboard/candidate`)
+        router.push(`/apply/one-click/success?jobId=${job.id}`)
       } else {
         alert(data.error || 'Failed to submit application. Please try again.')
         setOneClickLoading(false)
