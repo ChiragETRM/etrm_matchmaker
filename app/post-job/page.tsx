@@ -292,9 +292,24 @@ export default function PostJobPage() {
         body: JSON.stringify(payload),
       })
 
-      const result = await response.json()
+      const text = await response.text()
+      let result: { success?: boolean; job?: { slug: string; expiresAt: string }; error?: string; details?: Array<{ path: string[]; message: string }> }
+      const contentType = response.headers.get('content-type')
+      if (contentType?.includes('application/json')) {
+        try {
+          result = JSON.parse(text)
+        } catch {
+          console.error('JSON parse error, response:', text?.slice(0, 500))
+          alert('Failed to create job: The server returned an invalid response. Please try again or use a different browser.')
+          return
+        }
+      } else {
+        console.error('Non-JSON response:', text?.slice(0, 500))
+        alert(response.ok ? 'Invalid server response. Please try again.' : `Server error (${response.status}). Please try again.`)
+        return
+      }
 
-      if (result.success) {
+      if (result.success && result.job) {
         router.push(`/post-job/success?slug=${result.job.slug}&expiresAt=${result.job.expiresAt}`)
       } else {
         // Show detailed error message
@@ -364,14 +379,14 @@ export default function PostJobPage() {
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-700">
                     Remote Policy *
                   </label>
                   <select
                     {...register('remotePolicy', { required: true })}
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
                   >
                     <option value="ONSITE">Onsite</option>
                     <option value="HYBRID">Hybrid</option>
@@ -384,7 +399,7 @@ export default function PostJobPage() {
                   </label>
                   <select
                     {...register('contractType', { required: true })}
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
                   >
                     <option value="PERM">Permanent</option>
                     <option value="CONTRACT">Contract</option>
@@ -445,11 +460,11 @@ export default function PostJobPage() {
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
                   ETRM Packages
                 </label>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-4">
                   {ETRM_PACKAGES.map((pkg) => (
                     <label
                       key={pkg}
-                      className="flex items-center gap-2 cursor-pointer group"
+                      className="flex items-center gap-3 cursor-pointer group min-h-[44px] py-1"
                     >
                       <input
                         type="checkbox"
@@ -465,9 +480,9 @@ export default function PostJobPage() {
                             )
                           }
                         }}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
                       />
-                      <span className="text-gray-700 group-hover:text-blue-600 transition-colors">
+                      <span className="text-gray-700 group-hover:text-blue-600 transition-colors text-base">
                         {pkg}
                       </span>
                     </label>
@@ -478,19 +493,19 @@ export default function PostJobPage() {
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
                   Commodity Focus
                 </label>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-4">
                   {COMMODITIES.map((commodity) => (
                     <label
                       key={commodity}
-                      className="flex items-center gap-2 cursor-pointer group"
+                      className="flex items-center gap-3 cursor-pointer group min-h-[44px] py-1"
                     >
                       <input
                         type="checkbox"
                         value={commodity}
                         {...register('commodityTags')}
-                        className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
                       />
-                      <span className="text-gray-700 group-hover:text-blue-600 transition-colors">
+                      <span className="text-gray-700 group-hover:text-blue-600 transition-colors text-base">
                         {commodity}
                       </span>
                     </label>
@@ -505,13 +520,58 @@ export default function PostJobPage() {
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Budget Range *</h2>
             <div className="space-y-5">
               <div>
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
                   <label className="block text-sm font-semibold text-gray-700">
                     Set your budget range
                   </label>
                   <span className="text-lg font-bold text-blue-600 tabular-nums">
                     {budgetMinK}k – {budgetMaxK}k {watch('budgetCurrency')}
                   </span>
+                </div>
+                {/* Numeric inputs — easier on mobile than slider */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label htmlFor="budget-min-input" className="block text-xs font-medium text-gray-500 mb-1">Min (k)</label>
+                    <input
+                      id="budget-min-input"
+                      type="number"
+                      min={70}
+                      max={300}
+                      step={10}
+                      value={budgetMinK}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10)
+                        if (!Number.isNaN(val)) {
+                          const newMin = Math.max(70, Math.min(val, budgetMaxK))
+                          setBudgetMinK(newMin)
+                          setValue('budgetMin', (newMin * 1000).toString())
+                          setValue('budgetMax', (Math.max(newMin, budgetMaxK) * 1000).toString())
+                        }
+                      }}
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="budget-max-input" className="block text-xs font-medium text-gray-500 mb-1">Max (k)</label>
+                    <input
+                      id="budget-max-input"
+                      type="number"
+                      min={70}
+                      max={300}
+                      step={10}
+                      value={budgetMaxK}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10)
+                        if (!Number.isNaN(val)) {
+                          const newMax = Math.min(300, Math.max(val, budgetMinK))
+                          setBudgetMaxK(newMax)
+                          setValue('budgetMax', (newMax * 1000).toString())
+                          setValue('budgetMin', (Math.min(budgetMinK, newMax) * 1000).toString())
+                        }
+                      }}
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
                 </div>
                 <div className="relative h-10 flex items-center">
                   {/* Single track: gray bar */}
@@ -582,13 +642,13 @@ export default function PostJobPage() {
                   <option value="EUR">EUR</option>
                 </select>
               </div>
-              <label className="flex items-center gap-3 cursor-pointer group">
+              <label className="flex items-center gap-3 cursor-pointer group min-h-[44px] py-1">
                 <input
                   type="checkbox"
                   {...register('budgetIsEstimate')}
-                  className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
                 />
-                <span className="text-gray-700 group-hover:text-gray-900">
+                <span className="text-gray-700 group-hover:text-gray-900 text-base">
                   This is an estimated budget
                 </span>
               </label>

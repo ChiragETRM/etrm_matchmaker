@@ -395,10 +395,16 @@ export default function JobDetailPage() {
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Job Not Found</h1>
-          <Link href="/jobs" className="text-blue-600 hover:underline">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Job Not Found</h1>
+          <p className="text-gray-600 mb-6">
+            This job may have expired, been removed, or the link may be incorrect.
+          </p>
+          <Link
+            href="/jobs"
+            className="inline-block px-6 py-3 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-base"
+          >
             Browse Jobs
           </Link>
         </div>
@@ -491,25 +497,25 @@ export default function JobDetailPage() {
                   Stay updated with the latest job opportunities matching your preferences.
                 </p>
                 {jobAlertSuccess ? (
-                  <div className="text-green-600 text-sm font-medium">
-                    ✓ Successfully subscribed! You&apos;ll receive job alerts via email.
+                  <div className="p-4 bg-green-100 border border-green-300 rounded-lg text-green-800 font-medium text-base">
+                    ✓ You&apos;re subscribed! We&apos;ll send job alerts to your email.
                   </div>
                 ) : (
-                  <form onSubmit={handleJobAlertSubmit} className="flex gap-2">
+                  <form onSubmit={handleJobAlertSubmit} className="flex flex-col sm:flex-row gap-3">
                     <input
                       type="email"
                       value={jobAlertEmail}
                       onChange={(e) => setJobAlertEmail(e.target.value)}
                       placeholder="Enter your email"
                       required
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
                     />
                     <button
                       type="submit"
                       disabled={jobAlertLoading}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      className="px-6 py-3 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
                     >
-                      {jobAlertLoading ? 'Subscribing...' : 'Subscribe'}
+                      {jobAlertLoading ? 'Subscribing…' : 'Subscribe'}
                     </button>
                   </form>
                 )}

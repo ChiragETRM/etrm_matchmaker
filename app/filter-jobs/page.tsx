@@ -51,6 +51,7 @@ export default function FilterJobsPage() {
   const [multiValues, setMultiValues] = useState<Record<string, string[]>>({})
   const [existingAnswers, setExistingAnswers] = useState<Record<string, any>>({})
   const [hasAutoFiltered, setHasAutoFiltered] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const { register, handleSubmit, watch, setValue } = useForm()
 
   // Fetch questions
@@ -193,12 +194,25 @@ export default function FilterJobsPage() {
             </Link>
           </div>
         ) : (
-          <div className="flex gap-6">
-            {/* Left Sidebar - Filters */}
-            <div className="w-80 flex-shrink-0">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Mobile filter toggle */}
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-xl shadow border border-gray-200 font-medium text-gray-900"
+              >
+                <span>Filter Criteria</span>
+                <svg className={`w-5 h-5 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            {/* Left Sidebar - Filters (collapsible on mobile) */}
+            <div className={`w-full lg:w-80 flex-shrink-0 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
               <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="bg-white p-6 rounded-xl shadow sticky top-4"
+                className="bg-white p-6 rounded-xl shadow lg:sticky lg:top-4"
               >
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Filter Criteria</h2>
                 {sessionStatus === 'authenticated' && (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0) && (
@@ -254,14 +268,14 @@ export default function FilterJobsPage() {
                         {q.label}
                       </label>
                       {q.type === 'BOOLEAN' && (
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-sm">
-                            <input type="radio" value="true" {...register(q.key)} className="w-4 h-4" />
-                            Yes
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-3 min-h-[44px] py-1 cursor-pointer">
+                            <input type="radio" value="true" {...register(q.key)} className="w-5 h-5 text-indigo-600" />
+                            <span className="text-sm">Yes</span>
                           </label>
-                          <label className="flex items-center gap-2 text-sm">
-                            <input type="radio" value="false" {...register(q.key)} className="w-4 h-4" />
-                            No
+                          <label className="flex items-center gap-3 min-h-[44px] py-1 cursor-pointer">
+                            <input type="radio" value="false" {...register(q.key)} className="w-5 h-5 text-indigo-600" />
+                            <span className="text-sm">No</span>
                           </label>
                         </div>
                       )}
@@ -281,7 +295,7 @@ export default function FilterJobsPage() {
                       {q.type === 'MULTI_SELECT' && (
                         <div className="space-y-2 max-h-32 overflow-y-auto">
                           {q.options?.map((o) => (
-                            <label key={o} className="flex items-center gap-2 text-sm">
+                            <label key={o} className="flex items-center gap-3 min-h-[44px] py-1 cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={(multiValues[q.key] ?? []).includes(o)}
@@ -292,9 +306,9 @@ export default function FilterJobsPage() {
                                     : prev.filter((x) => x !== o)
                                   setMultiValues((m) => ({ ...m, [q.key]: next }))
                                 }}
-                                className="w-4 h-4"
+                                className="w-5 h-5 text-indigo-600 rounded border-gray-300"
                               />
-                              <span className="text-gray-700">{o}</span>
+                              <span className="text-sm text-gray-700">{o}</span>
                             </label>
                           ))}
                         </div>
@@ -321,7 +335,7 @@ export default function FilterJobsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full mt-6 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition"
+                  className="w-full mt-6 px-4 py-3 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-base transition"
                 >
                   {submitting ? 'Finding jobs…' : sessionStatus === 'authenticated' && (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0) ? 'Update & Find jobs' : 'Find my jobs'}
                 </button>

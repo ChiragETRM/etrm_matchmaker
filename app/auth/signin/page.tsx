@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { signIn, useSession, signOut } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
@@ -41,6 +41,8 @@ function SignInContent() {
   const errorDetails = searchParams.get('details')
   const [isClearingCookies, setIsClearingCookies] = useState(false)
   const [termsAgreed, setTermsAgreed] = useState(false)
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
+  const termsScrollRef = useRef<HTMLDivElement>(null)
 
   // Handle errors by clearing cookies and retrying
   useEffect(() => {
@@ -230,7 +232,19 @@ function SignInContent() {
           <div className="space-y-4">
             {/* Readable Terms & Conditions */}
             <div className="rounded-lg border border-gray-200 bg-gray-50">
-              <div className="max-h-48 overflow-y-auto p-4 text-sm text-gray-700 leading-relaxed">
+              <p className="text-xs font-medium text-amber-700 bg-amber-50 border-b border-amber-200 px-4 py-2">
+                Please scroll to the bottom of the terms below before you can agree and continue.
+              </p>
+              <div
+                ref={termsScrollRef}
+                className="max-h-48 overflow-y-auto p-4 text-sm text-gray-700 leading-relaxed"
+                onScroll={() => {
+                  const el = termsScrollRef.current
+                  if (!el) return
+                  const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 20
+                  setHasScrolledToBottom(atBottom)
+                }}
+              >
                 <p className="font-semibold text-gray-900 mb-2">LearnETRM – Platform Terms & Candidate Representation</p>
                 <p className="mb-3">By signing in, applying for a role, or submitting information on LearnETRM (&quot;the Platform&quot;), you agree to the following terms.</p>
                 <p className="font-medium text-gray-800 mb-1">1. Platform Role</p>
@@ -253,12 +267,16 @@ function SignInContent() {
                 <p className="mb-2">LearnETRM reserves the right to: modify or discontinue the platform; remove users or applications that violate these terms; update these terms periodically. Continued use of the platform constitutes acceptance of updated terms.</p>
               </div>
               <div className="border-t border-gray-200 bg-white p-4">
-                <label className="flex items-start gap-3 cursor-pointer">
+                {!hasScrolledToBottom && (
+                  <p className="text-xs text-amber-600 mb-2">Scroll to the bottom of the terms above to enable this option.</p>
+                )}
+                <label className={`flex items-start gap-3 cursor-pointer ${!hasScrolledToBottom ? 'opacity-75' : ''}`}>
                   <input
                     type="checkbox"
                     checked={termsAgreed}
                     onChange={(e) => setTermsAgreed(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shrink-0"
+                    disabled={!hasScrolledToBottom}
+                    className="mt-1 h-5 w-5 min-w-[20px] min-h-[20px] text-blue-600 focus:ring-blue-500 border-gray-300 rounded shrink-0"
                     required
                   />
                   <span className="text-sm font-medium text-gray-900">
@@ -271,7 +289,7 @@ function SignInContent() {
             <button
               onClick={handleSignIn}
               disabled={isClearingCookies || !termsAgreed}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 px-4 py-4 min-h-[48px] text-base border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -295,10 +313,13 @@ function SignInContent() {
             </button>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-2">
             <p className="text-center text-sm text-gray-500">
               Sign in with your Google account to access the recruiter and
               candidate dashboards.
+            </p>
+            <p className="text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              If Google sign-in fails (e.g. &quot;insecure browser&quot; on mobile), try opening this page in Chrome or Safari on your device, or sign in on a desktop browser.
             </p>
           </div>
         </div>

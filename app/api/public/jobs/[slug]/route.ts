@@ -8,9 +8,13 @@ export async function GET(
 ) {
   try {
     const now = new Date()
+    const slugParam = params.slug?.trim() ?? ''
 
-    const job = await prisma.job.findUnique({
-      where: { slug: params.slug },
+    // Case-insensitive slug lookup so direct URLs with different casing don't 404
+    const job = await prisma.job.findFirst({
+      where: {
+        slug: { equals: slugParam, mode: 'insensitive' },
+      },
       include: {
         questionnaire: {
           include: {
