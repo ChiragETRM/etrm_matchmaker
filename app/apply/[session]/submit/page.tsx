@@ -216,7 +216,11 @@ export default function SubmitApplicationPage() {
                 </label>
                 <input
                   type="tel"
-                  {...register('candidatePhone', { required: true })}
+                  {...register('candidatePhone', {
+                  required: 'Phone number is required',
+                  minLength: { value: 1, message: 'Phone number is required' },
+                  validate: (v) => (v?.trim()?.length ? true : 'Phone number is required'),
+                })}
                   className="w-full border rounded px-3 py-2"
                   required
                 />
