@@ -85,8 +85,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           scope: 'openid email profile https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         },
       },
-      // Ensure PKCE is enabled (default in NextAuth v5, but explicit is better)
-      checks: ['pkce', 'state'],
+      // Use PKCE only: avoids "InvalidCheck: state value could not be parsed" in serverless
+      // (state cookie can fail on Vercel due to cookie isolation between invocations).
+      // PKCE alone is sufficient for the authorization code flow.
+      checks: ['pkce'],
     }),
   ],
   pages: {
