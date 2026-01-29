@@ -32,11 +32,15 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* Dual-thumb range slider: transparent track, visible thumb only */
+/* Dual-thumb range slider: transparent track, visible thumb only.
+   pointer-events:none on the input lets clicks pass through the
+   overlapping upper input so both thumbs are reachable. */
 .range-thumb-only {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
+  pointer-events: none;          /* pass clicks through the input body */
+  touch-action: none;            /* prevent scroll hijack on mobile   */
 }
 .range-thumb-only::-webkit-slider-runnable-track {
   background: transparent;
@@ -45,40 +49,44 @@ body {
 .range-thumb-only::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #2563eb;
   border: 3px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   cursor: grab;
-  margin-top: -5px;
+  margin-top: -8px;
+  pointer-events: auto;          /* only the thumb receives events */
 }
 .range-thumb-only::-webkit-slider-thumb:hover {
   background: #1d4ed8;
+  transform: scale(1.15);
 }
 .range-thumb-only::-webkit-slider-thumb:active {
   cursor: grabbing;
+  transform: scale(1.2);
 }
 .range-thumb-only::-moz-range-track {
   background: transparent;
   height: 12px;
 }
 .range-thumb-only::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #2563eb;
   border: 3px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   cursor: grab;
+  pointer-events: auto;          /* only the thumb receives events */
 }
 .range-thumb-only::-moz-range-thumb:hover {
   background: #1d4ed8;
 }
 .range-thumb-z-1 {
-  z-index: 1;
+  z-index: 3;
 }
 .range-thumb-z-2 {
-  z-index: 2;
+  z-index: 4;
 }

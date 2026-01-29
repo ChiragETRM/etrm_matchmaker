@@ -513,10 +513,10 @@ export default function PostJobPage() {
                     {budgetMinK}k – {budgetMaxK}k {watch('budgetCurrency')}
                   </span>
                 </div>
-                <div className="relative h-10 flex items-center">
-                  {/* Single track: gray bar */}
+                <div className="relative h-12 flex items-center select-none">
+                  {/* Track background */}
                   <div
-                    className="absolute inset-x-0 h-3 rounded-full bg-gray-200"
+                    className="absolute inset-x-0 h-3 rounded-full bg-gray-200 pointer-events-none"
                     aria-hidden
                   />
                   {/* Filled segment between thumbs */}
@@ -528,7 +528,7 @@ export default function PostJobPage() {
                     }}
                     aria-hidden
                   />
-                  {/* Min thumb — lower z so max thumb is on top when overlapping */}
+                  {/* Min thumb */}
                   <input
                     type="range"
                     min={70}
@@ -536,17 +536,14 @@ export default function PostJobPage() {
                     step={10}
                     value={budgetMinK}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value)
-                      const newMin = Math.min(value, budgetMaxK)
-                      const newMax = newMin > budgetMaxK ? newMin : budgetMaxK
-                      setBudgetMinK(newMin)
-                      setBudgetMaxK(newMax)
-                      setValue('budgetMin', (newMin * 1000).toString())
-                      setValue('budgetMax', (newMax * 1000).toString())
+                      const v = Math.min(+e.target.value, budgetMaxK)
+                      setBudgetMinK(v)
+                      setValue('budgetMin', (v * 1000).toString())
                     }}
                     className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-1"
+                    aria-label="Minimum budget"
                   />
-                  {/* Max thumb — higher z so it’s draggable when thumbs meet */}
+                  {/* Max thumb */}
                   <input
                     type="range"
                     min={70}
@@ -554,14 +551,12 @@ export default function PostJobPage() {
                     step={10}
                     value={budgetMaxK}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value)
-                      const newMax = Math.max(value, budgetMinK)
-                      setBudgetMaxK(newMax)
-                      setBudgetMinK((prev) => (newMax < prev ? newMax : prev))
-                      setValue('budgetMax', (newMax * 1000).toString())
-                      setValue('budgetMin', (Math.min(budgetMinK, newMax) * 1000).toString())
+                      const v = Math.max(+e.target.value, budgetMinK)
+                      setBudgetMaxK(v)
+                      setValue('budgetMax', (v * 1000).toString())
                     }}
                     className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-2"
+                    aria-label="Maximum budget"
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500 mt-2 px-0.5">
