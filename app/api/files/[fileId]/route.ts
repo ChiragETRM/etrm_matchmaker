@@ -17,16 +17,10 @@ export async function GET(
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    // In production, generate signed URL from storage provider
-    // For MVP, return a placeholder
-    return NextResponse.json({
-      fileId: fileObject.id,
-      path: fileObject.path,
-      mimeType: fileObject.mimeType,
-      sizeBytes: fileObject.sizeBytes,
-      // In production: url: await generateSignedUrl(fileObject)
-      url: `/api/files/${fileObject.id}/download`,
-    })
+    // Redirect to download endpoint so CV/resume links (e.g. from emails) always get the file, not JSON
+    const requestUrl = new URL(request.url)
+    const downloadUrl = `${requestUrl.origin}/api/files/${fileObject.id}/download`
+    return NextResponse.redirect(downloadUrl, 302)
   } catch (error) {
     console.error('Error fetching file:', error)
     return NextResponse.json(
