@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// File download endpoint
-// In production, generate signed URLs from S3/R2/Supabase
+// GET /api/files/[fileId] — redirects to the download endpoint so that
+// "download here" links (e.g. in emails) always trigger a file download,
+// never JSON metadata.
 
 export async function GET(
   request: NextRequest,
@@ -17,16 +18,9 @@ export async function GET(
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    // In production, generate signed URL from storage provider
-    // For MVP, return a placeholder
-    return NextResponse.json({
-      fileId: fileObject.id,
-      path: fileObject.path,
-      mimeType: fileObject.mimeType,
-      sizeBytes: fileObject.sizeBytes,
-      // In production: url: await generateSignedUrl(fileObject)
-      url: `/api/files/${fileObject.id}/download`,
-    })
+    const downloadPath = `/api/files/${params.fileId}/download`
+    const redirectUrl = new URL(downloadPath, request.url)
+    return NextResponse.redirect(redirectUrl, 302)
   } catch (error) {
     console.error('Error fetching file:', error)
     return NextResponse.json(

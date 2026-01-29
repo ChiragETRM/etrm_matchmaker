@@ -43,12 +43,15 @@ export async function GET(
 
         const fileBuffer = await response.arrayBuffer()
         const fileName = fileObject.path.split('/').pop() || 'download'
+        const safeFileName = fileName.replace(/[^\x20-\x7E]/g, '_')
+        const disposition = `attachment; filename="${safeFileName.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
 
         return new NextResponse(fileBuffer, {
           headers: {
             'Content-Type': fileObject.mimeType || 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+            'Content-Disposition': disposition,
             'Content-Length': fileObject.sizeBytes.toString(),
+            'Cache-Control': 'private, no-cache',
           },
         })
       } catch (error) {
@@ -84,12 +87,15 @@ export async function GET(
         // Convert base64 data back to buffer
         const fileBuffer = Buffer.from(fileObject.data, 'base64')
         const fileName = fileObject.path.split('/').pop() || 'download'
+        const safeFileName = fileName.replace(/[^\x20-\x7E]/g, '_')
+        const disposition = `attachment; filename="${safeFileName.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
 
         return new NextResponse(fileBuffer, {
           headers: {
             'Content-Type': fileObject.mimeType || 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="${encodeURIComponent(fileName)}"`,
+            'Content-Disposition': disposition,
             'Content-Length': fileObject.sizeBytes.toString(),
+            'Cache-Control': 'private, no-cache',
           },
         })
       } catch (error) {

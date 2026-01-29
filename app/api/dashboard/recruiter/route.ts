@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         recruiterStatus: a.recruiterStatus,
         createdAt: a.createdAt,
         resumeUrl: a.resumeFileId
-          ? `${baseUrl}/api/files/${a.resumeFileId}`
+          ? `${baseUrl}/api/files/${a.resumeFileId}/download`
           : null,
         questions: j.questionnaire?.questions ?? [],
       })),
