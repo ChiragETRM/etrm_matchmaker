@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { uploadFile } from '@/lib/storage'
 import { sendEmail } from '@/lib/email'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { escapeHtml } from '@/lib/html-escape'
 import { z } from 'zod'
 
 const submitSchema = z.object({
@@ -170,13 +171,15 @@ export async function POST(
       const answersHtml = questions
         .map((q) => {
           const answer = answers[q.key]
-          let displayValue = answer
+          let displayValue: string
           if (Array.isArray(answer)) {
-            displayValue = answer.join(', ')
+            displayValue = escapeHtml(answer.join(', '))
           } else if (typeof answer === 'boolean') {
             displayValue = answer ? 'Yes' : 'No'
+          } else {
+            displayValue = escapeHtml(answer) || 'N/A'
           }
-          return `<tr><td><strong>${q.label}</strong></td><td>${displayValue || 'N/A'}</td></tr>`
+          return `<tr><td><strong>${escapeHtml(q.label)}</strong></td><td>${displayValue}</td></tr>`
         })
         .join('')
 
@@ -189,22 +192,22 @@ export async function POST(
 
         <h3>Job</h3>
         <ul>
-          <li><strong>Role:</strong> ${session.job.title}</li>
-          <li><strong>Location:</strong> ${session.job.locationText}</li>
-          <li><strong>ETRM Packages:</strong> ${session.job.etrmPackages.join(', ') || 'N/A'}</li>
-          <li><strong>Link to job:</strong> <a href="${jobLink}">${jobLink}</a></li>
+          <li><strong>Role:</strong> ${escapeHtml(session.job.title)}</li>
+          <li><strong>Location:</strong> ${escapeHtml(session.job.locationText)}</li>
+          <li><strong>ETRM Packages:</strong> ${escapeHtml(session.job.etrmPackages.join(', ')) || 'N/A'}</li>
+          <li><strong>Link to job:</strong> <a href="${escapeHtml(jobLink)}">${escapeHtml(jobLink)}</a></li>
         </ul>
 
         <h3>Candidate</h3>
         <ul>
-          <li><strong>Name:</strong> ${data.candidateName}</li>
-          <li><strong>Email:</strong> ${data.candidateEmail}</li>
-          <li><strong>Phone:</strong> ${data.candidatePhone || 'N/A'}</li>
-          <li><strong>LinkedIn:</strong> ${data.candidateLinkedin || 'N/A'}</li>
+          <li><strong>Name:</strong> ${escapeHtml(data.candidateName)}</li>
+          <li><strong>Email:</strong> ${escapeHtml(data.candidateEmail)}</li>
+          <li><strong>Phone:</strong> ${escapeHtml(data.candidatePhone) || 'N/A'}</li>
+          <li><strong>LinkedIn:</strong> ${escapeHtml(data.candidateLinkedin) || 'N/A'}</li>
         </ul>
 
         <h3>Resume</h3>
-        <p>CV attached to this email. <a href="${resumeUrl}">Or download here</a>.</p>
+        <p>CV attached to this email. <a href="${escapeHtml(resumeUrl)}">Or download here</a>.</p>
         ${answersHtml ? `
         <h3>Questions &amp; Answers</h3>
         <table border="1" cellpadding="5" cellspacing="0">

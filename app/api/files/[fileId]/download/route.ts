@@ -1,20 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 
 // File download endpoint
 // Downloads file from storage provider (Supabase/S3/R2) and returns it
+// Protected: requires authentication and verifies the caller owns or recruits for the file
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { fileId: string } }
 ) {
   try {
+    // Require authentication to download files
+    const session = await auth()
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please sign in to download files.' },
+        { status: 401 }
+      )
+    }
+
+    const userEmail = session.user.email.toLowerCase()
+
     const fileObject = await prisma.fileObject.findUnique({
       where: { id: params.fileId },
+      include: {
+        applications: {
+          select: {
+            candidateEmail: true,
+            job: {
+              select: {
+                recruiterEmailTo: true,
+                recruiterEmailCc: true,
+              },
+            },
+          },
+        },
+      },
     })
 
     if (!fileObject) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
+    }
+
+    // Authorization: user must be the candidate who uploaded, or the recruiter for the job
+    const isOwner = fileObject.applications.some(
+      (app) => app.candidateEmail.toLowerCase() === userEmail
+    )
+    const isRecruiter = fileObject.applications.some(
+      (app) =>
+        app.job.recruiterEmailTo.toLowerCase() === userEmail ||
+        app.job.recruiterEmailCc.some((cc) => cc.toLowerCase() === userEmail)
+    )
+
+    if (!isOwner && !isRecruiter) {
+      return NextResponse.json(
+        { error: 'Forbidden. You do not have access to this file.' },
+        { status: 403 }
+      )
     }
 
     // Use the file's actual provider, fallback to env var
