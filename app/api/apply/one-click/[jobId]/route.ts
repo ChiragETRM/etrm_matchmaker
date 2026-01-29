@@ -283,7 +283,7 @@ export async function POST(
         .join('')
 
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      const resumeUrl = resumeFileId ? `${baseUrl}/api/files/${resumeFileId}` : 'N/A'
+      const resumeUrl = resumeFileId ? `${baseUrl}/api/files/${resumeFileId}/download` : 'N/A'
       const jobLink = `${baseUrl}/jobs/${job.slug}`
 
       const emailHtml = `
