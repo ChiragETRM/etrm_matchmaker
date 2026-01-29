@@ -262,7 +262,7 @@ function SignInContent() {
                     required
                   />
                   <span className="text-sm font-medium text-gray-900">
-                    I agree to the LearnETRM Terms & Conditions and consent to representation for this job application
+                    I agree to the LearnETRM Terms & Conditions
                   </span>
                 </label>
               </div>
