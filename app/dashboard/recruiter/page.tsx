@@ -67,25 +67,6 @@ export default function RecruiterDashboardPage() {
     }
   }, [status, email])
 
-  const updateStatus = async (
-    applicationId: string,
-    newStatus: 'SHORTLISTED' | 'DISCARDED'
-  ) => {
-    try {
-      const res = await fetch('/api/dashboard/recruiter/application', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          applicationId,
-          status: newStatus,
-        }),
-      })
-      if (res.ok) fetchData()
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
   const toggleArchive = async (jobId: string, currentlyArchived: boolean) => {
     try {
       const res = await fetch('/api/dashboard/recruiter/job/archive', {
@@ -209,8 +190,7 @@ export default function RecruiterDashboardPage() {
                             key={a.id}
                             className="border border-gray-200 rounded-lg p-4"
                           >
-                            <div className="flex flex-wrap justify-between gap-4">
-                              <div>
+                            <div>
                                 <p className="font-medium text-gray-900">
                                   {a.candidateName}
                                 </p>
@@ -223,40 +203,6 @@ export default function RecruiterDashboardPage() {
                                   </p>
                                 )}
                               </div>
-                              <div className="flex gap-2 items-center">
-                                <span
-                                  className={`text-xs font-medium px-2 py-1 rounded ${
-                                    a.recruiterStatus === 'SHORTLISTED'
-                                      ? 'bg-green-100 text-green-800'
-                                      : a.recruiterStatus === 'DISCARDED'
-                                      ? 'bg-gray-100 text-gray-600'
-                                      : 'bg-amber-100 text-amber-800'
-                                  }`}
-                                >
-                                  {a.recruiterStatus}
-                                </span>
-                                {a.recruiterStatus === 'PENDING' && (
-                                  <>
-                                    <button
-                                      onClick={() =>
-                                        updateStatus(a.id, 'SHORTLISTED')
-                                      }
-                                      className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                                    >
-                                      Shortlist
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        updateStatus(a.id, 'DISCARDED')
-                                      }
-                                      className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
-                                    >
-                                      Discard
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
                             <div className="mt-3 flex flex-wrap gap-3">
                               {a.resumeUrl && (
                                 <a
@@ -281,7 +227,7 @@ export default function RecruiterDashboardPage() {
                                 Email Candidate
                               </a>
                             </div>
-                            <details className="mt-3">
+                            <details className="mt-3" open>
                               <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
                                 View Answers to Hard Gates & Questions
                               </summary>
@@ -372,8 +318,7 @@ export default function RecruiterDashboardPage() {
                                     key={a.id}
                                     className="border border-gray-200 rounded-lg p-4"
                                   >
-                                    <div className="flex flex-wrap justify-between gap-4">
-                                      <div>
+                                    <div>
                                         <p className="font-medium text-gray-900">
                                           {a.candidateName}
                                         </p>
@@ -386,40 +331,6 @@ export default function RecruiterDashboardPage() {
                                           </p>
                                         )}
                                       </div>
-                                      <div className="flex gap-2 items-center">
-                                        <span
-                                          className={`text-xs font-medium px-2 py-1 rounded ${
-                                            a.recruiterStatus === 'SHORTLISTED'
-                                              ? 'bg-green-100 text-green-800'
-                                              : a.recruiterStatus === 'DISCARDED'
-                                              ? 'bg-gray-100 text-gray-600'
-                                              : 'bg-amber-100 text-amber-800'
-                                          }`}
-                                        >
-                                          {a.recruiterStatus}
-                                        </span>
-                                        {a.recruiterStatus === 'PENDING' && (
-                                          <>
-                                            <button
-                                              onClick={() =>
-                                                updateStatus(a.id, 'SHORTLISTED')
-                                              }
-                                              className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                                            >
-                                              Shortlist
-                                            </button>
-                                            <button
-                                              onClick={() =>
-                                                updateStatus(a.id, 'DISCARDED')
-                                              }
-                                              className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
-                                            >
-                                              Discard
-                                            </button>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
                                     <div className="mt-3 flex flex-wrap gap-3">
                                       {a.resumeUrl && (
                                         <a
@@ -444,7 +355,7 @@ export default function RecruiterDashboardPage() {
                                         Email Candidate
                                       </a>
                                     </div>
-                                    <details className="mt-3">
+                                    <details className="mt-3" open>
                                       <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
                                         View Answers to Hard Gates & Questions
                                       </summary>

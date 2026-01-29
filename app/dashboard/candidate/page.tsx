@@ -688,7 +688,7 @@ export default function CandidateDashboardPage() {
                       </a>
                     )}
                   </div>
-                  <details className="mt-4">
+                  <details className="mt-4" open>
                     <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors flex items-center gap-2">
                       <span className="text-indigo-600">▼</span>
                       Questionnaire Answers
