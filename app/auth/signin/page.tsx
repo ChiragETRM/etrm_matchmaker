@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { signIn, useSession, signOut } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Suspense } from 'react'
 
-// Function to clear NextAuth cookies
 function clearAuthCookies() {
   const cookiesToClear = [
     'next-auth.session-token',
@@ -19,16 +19,9 @@ function clearAuthCookies() {
     'next-auth.state',
     '__Secure-next-auth.state',
   ]
-
-  cookiesToClear.forEach((cookieName) => {
-    // Clear with different path variations
-    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
-    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth;`
-    // Clear with domain variations (for production)
-    if (window.location.hostname !== 'localhost') {
-      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`
-      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`
-    }
+  cookiesToClear.forEach((name) => {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api/auth;`
   })
 }
 
@@ -42,27 +35,20 @@ function SignInContent() {
   const [isClearingCookies, setIsClearingCookies] = useState(false)
   const [termsAgreed, setTermsAgreed] = useState(false)
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
-  const [magicLinkEmail, setMagicLinkEmail] = useState('')
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
-  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpError, setOtpError] = useState('')
   const termsScrollRef = useRef<HTMLDivElement>(null)
 
-  // Handle errors by clearing cookies and retrying
   useEffect(() => {
     if (error && !isClearingCookies) {
-      console.error('Authentication error:', error, errorDetails)
-      // Clear cookies on error to fix stale session issues
-      // This is especially important for PKCE errors where cookies may be corrupted
       clearAuthCookies()
       setIsClearingCookies(true)
-      
-      // If it's a configuration error, PKCE error, state error, or other critical error, sign out first
-      if (error === 'Configuration' || error === 'AccessDenied' || error === 'PKCEError' || error === 'StateError') {
+      if (['Configuration', 'AccessDenied', 'PKCEError', 'StateError'].includes(error)) {
         signOut({ redirect: false }).then(() => {
-          // Clear cookies again after sign out
           setTimeout(() => {
             clearAuthCookies()
-            // Reload page to start fresh
             window.location.href = '/auth/signin'
           }, 100)
         })
@@ -72,113 +58,80 @@ function SignInContent() {
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
-      // Check if job alert policy agreement needs to be saved
       const savePolicyAgreement = async () => {
-        const policyAgreed = searchParams.get('termsAgreed') === 'true' || 
-                            sessionStorage.getItem('termsAgreed') === 'true'
-        
+        const policyAgreed = searchParams.get('termsAgreed') === 'true' || sessionStorage.getItem('termsAgreed') === 'true'
         if (policyAgreed) {
           try {
-            await fetch('/api/auth/job-alert-policy', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-            })
+            await fetch('/api/auth/job-alert-policy', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
             sessionStorage.removeItem('termsAgreed')
-          } catch (error) {
-            console.error('Error saving job alert policy agreement:', error)
-          }
+          } catch {}
         }
       }
-
-      // Decode the callbackUrl in case it's URL-encoded
       let decodedUrl = callbackUrl
-      try {
-        decodedUrl = decodeURIComponent(callbackUrl)
-      } catch {
-        decodedUrl = callbackUrl
-      }
-
-      // Extract pathname if it's an absolute URL
+      try { decodedUrl = decodeURIComponent(callbackUrl) } catch {}
       try {
         const urlObj = new URL(decodedUrl, window.location.origin)
-        // Only use the pathname if it's the same origin
         if (urlObj.origin === window.location.origin) {
-          decodedUrl = urlObj.pathname + urlObj.search
-          // Remove jobAlertPolicyAgreed from query params before redirecting
-          const url = new URL(decodedUrl, window.location.origin)
-          url.searchParams.delete('termsAgreed')
-          decodedUrl = url.pathname + url.search
-        } else {
-          // Different origin - default to dashboard for safety
-          decodedUrl = '/dashboard'
-        }
+          const u = new URL(decodedUrl, window.location.origin)
+          u.searchParams.delete('termsAgreed')
+          decodedUrl = u.pathname + u.search
+        } else decodedUrl = '/dashboard'
       } catch {
-        // If URL parsing fails, ensure it starts with /
-        if (!decodedUrl.startsWith('/')) {
-          decodedUrl = '/' + decodedUrl
-        }
+        if (!decodedUrl.startsWith('/')) decodedUrl = '/' + decodedUrl
       }
-
-      // Save policy agreement and then redirect
-      savePolicyAgreement().then(() => {
-        // Use router.push for client-side navigation
-        router.push(decodedUrl)
-      })
+      savePolicyAgreement().then(() => router.push(decodedUrl))
     }
   }, [status, session, callbackUrl, router, searchParams])
+
+  const handleOtpRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!termsAgreed) {
+      alert('Please agree to the LearnETRM Terms & Conditions to continue.')
+      return
+    }
+    const emailTrim = email.trim().toLowerCase()
+    if (!emailTrim) {
+      setOtpError('Please enter your email address.')
+      return
+    }
+    setOtpError('')
+    setOtpLoading(true)
+    try {
+      const res = await fetch('/api/auth/email/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailTrim, name: name.trim() || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setOtpError(data.error || 'Failed to send code.')
+        return
+      }
+      sessionStorage.setItem('otpEmail', emailTrim)
+      sessionStorage.setItem('otpName', name.trim())
+      const params = new URLSearchParams({ email: emailTrim })
+      if (callbackUrl && callbackUrl !== '/dashboard') params.set('callbackUrl', callbackUrl)
+      router.push(`/auth/verify?${params.toString()}`)
+    } catch {
+      setOtpError('Something went wrong. Please try again.')
+    } finally {
+      setOtpLoading(false)
+    }
+  }
 
   const handleGoogleSignIn = async () => {
     if (!termsAgreed) {
       alert('Please agree to the LearnETRM Terms & Conditions to continue.')
       return
     }
-
     clearAuthCookies()
     setIsClearingCookies(true)
-    
     try {
       sessionStorage.setItem('termsAgreed', 'true')
-      await signIn('google', { 
-        callbackUrl: `${callbackUrl}?termsAgreed=true`,
-        redirect: true,
-      })
-    } catch (err) {
-      console.error('Sign in error:', err)
+      await signIn('google', { callbackUrl: `${callbackUrl}?termsAgreed=true`, redirect: true })
+    } catch {
       clearAuthCookies()
       window.location.href = '/auth/signin?error=SignInError'
-    }
-  }
-
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!termsAgreed) {
-      alert('Please agree to the LearnETRM Terms & Conditions to continue.')
-      return
-    }
-    const email = magicLinkEmail.trim()
-    if (!email) {
-      alert('Please enter your email address.')
-      return
-    }
-    setMagicLinkLoading(true)
-    setMagicLinkSent(false)
-    try {
-      const result = await signIn('email', {
-        email,
-        callbackUrl: `${callbackUrl}?termsAgreed=true`,
-        redirect: false,
-      })
-      if (result?.error) {
-        alert(result.error === 'EmailSignin' ? 'Failed to send sign-in email. Check your email configuration or try Google sign-in.' : String(result.error))
-        setMagicLinkLoading(false)
-        return
-      }
-      setMagicLinkSent(true)
-    } catch (err) {
-      console.error('Magic link error:', err)
-      alert('Failed to send sign-in email. Please try again or use Google sign-in.')
-    } finally {
-      setMagicLinkLoading(false)
     }
   }
 
@@ -204,195 +157,114 @@ function SignInContent() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold text-gray-900">
-          Hand Picked ETRM/CTRM Jobs
-        </h1>
-        <h2 className="mt-6 text-center text-xl text-gray-600">
-          Sign in to your account
-        </h2>
+        <h1 className="text-center text-3xl font-bold text-gray-900">Hand Picked ETRM/CTRM Jobs</h1>
+        <h2 className="mt-6 text-center text-xl text-gray-600">Sign in to your account</h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600 mb-2 font-medium">
-                {error === 'OAuthAccountNotLinked'
-                  ? 'This email is already associated with another account.'
-                  : error === 'Configuration'
-                  ? 'Authentication configuration error. Please try again after clearing your browser cookies.'
-                  : error === 'AccessDenied'
-                  ? 'Access denied. Please try again.'
-                  : error === 'Verification'
-                  ? 'Verification error. Please try again.'
-                  : error === 'PKCEError' || error === 'StateError'
-                  ? 'Session error. Please clear your browser cookies and try again.'
-                  : 'An error occurred during sign in. Please try again.'}
+              <p className="text-sm text-red-600 font-medium">
+                {error === 'OAuthAccountNotLinked' ? 'This email is already associated with another account.'
+                  : error === 'Configuration' ? 'Authentication configuration error. Please try again after clearing cookies.'
+                  : error === 'PKCEError' || error === 'StateError' ? 'Session error. Please clear cookies and try again.'
+                  : 'An error occurred. Please try again.'}
               </p>
-              {errorDetails && (
-                <p className="text-xs text-red-500 mb-2 mt-1 font-mono break-all">
-                  {decodeURIComponent(errorDetails)}
-                </p>
-              )}
-              {error === 'Configuration' && (
-                <div className="mt-3 space-y-2">
-                  <button
-                    onClick={() => {
-                      clearAuthCookies()
-                      signOut({ redirect: false }).then(() => {
-                        window.location.href = '/auth/signin'
-                      })
-                    }}
-                    className="text-xs text-red-600 underline hover:text-red-800 mr-4"
-                  >
-                    Clear cookies and retry
-                  </button>
-                  <a
-                    href="/api/auth/health"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-red-600 underline hover:text-red-800"
-                  >
-                    Check configuration
-                  </a>
-                </div>
-              )}
+              {errorDetails && <p className="text-xs text-red-500 mt-1 break-all">{decodeURIComponent(errorDetails)}</p>}
             </div>
           )}
 
-          <div className="space-y-4">
-            {/* Magic-link (email) sign-in — works when Google OAuth is blocked */}
-            <form onSubmit={handleMagicLinkSubmit} className="space-y-3">
-              <label htmlFor="magic-link-email" className="block text-sm font-medium text-gray-700">
-                Sign in with email (magic link)
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  id="magic-link-email"
-                  type="email"
-                  value={magicLinkEmail}
-                  onChange={(e) => setMagicLinkEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  disabled={magicLinkLoading}
-                  className="flex-1 min-w-0 px-4 py-3 min-h-[48px] border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none text-base"
-                  aria-label="Email address for magic link sign-in"
-                />
-                <button
-                  type="submit"
-                  disabled={magicLinkLoading || !magicLinkEmail.trim()}
-                  className="px-4 py-3 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap touch-manipulation"
-                >
-                  {magicLinkLoading ? 'Sending…' : 'Send magic link'}
-                </button>
-              </div>
-              {magicLinkSent && (
-                <p className="text-sm text-green-600 font-medium" role="status">
-                  Check your email for a sign-in link. It may take a minute.
-                </p>
-              )}
-            </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">Or continue with Google</span>
-              </div>
+          <form onSubmit={handleOtpRequest} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name (optional, for new accounts)</label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+              />
             </div>
-
-            {/* Readable Terms & Conditions */}
-            <div className="rounded-lg border border-gray-200 bg-gray-50">
-              <p className="text-xs font-medium text-amber-700 bg-amber-50 border-b border-amber-200 px-4 py-2">
-                Please scroll to the bottom of the terms below before you can agree and continue.
-              </p>
-              <div
-                ref={termsScrollRef}
-                className="max-h-48 overflow-y-auto p-4 text-sm text-gray-700 leading-relaxed"
-                onScroll={() => {
-                  const el = termsScrollRef.current
-                  if (!el) return
-                  const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 20
-                  setHasScrolledToBottom(atBottom)
-                }}
-              >
-                <p className="font-semibold text-gray-900 mb-2">LearnETRM – Platform Terms & Candidate Representation</p>
-                <p className="mb-3">By signing in, applying for a role, or submitting information on LearnETRM (&quot;the Platform&quot;), you agree to the following terms.</p>
-                <p className="font-medium text-gray-800 mb-1">1. Platform Role</p>
-                <p className="mb-3">LearnETRM operates as a curated job discovery and candidate screening platform focused on Energy Trading & Risk Management (ETRM / CTRM) roles. LearnETRM is not an employer and does not make hiring decisions.</p>
-                <p className="font-medium text-gray-800 mb-1">2. Candidate Consent & Representation</p>
-                <p className="mb-3">By applying to a job through LearnETRM, you explicitly authorize LearnETRM to: represent you solely for that specific job application; share your profile, CV, and application responses only with the hiring company or recruiter associated with that role; communicate with the recruiter on your behalf regarding that application. This representation is non-exclusive beyond the specific role and does not restrict you from applying to other roles elsewhere.</p>
-                <p className="font-medium text-gray-800 mb-1">3. No Parallel Submissions</p>
-                <p className="mb-3">You confirm that you have not applied independently to the same role through another channel (company website, recruiter, LinkedIn, or job board) prior to submitting via LearnETRM. If a duplicate application is discovered, LearnETRM reserves the right to withdraw or invalidate the application without notice.</p>
-                <p className="font-medium text-gray-800 mb-1">4. Accuracy of Information</p>
-                <p className="mb-3">You confirm that all information provided by you is true, accurate, and complete. Any false, misleading, or materially incorrect information may result in immediate removal from the platform and withdrawal of your application.</p>
-                <p className="font-medium text-gray-800 mb-1">5. Recruiter Acknowledgement</p>
-                <p className="mb-3">Recruiters using LearnETRM acknowledge that: candidate submissions are curated and pre-screened; candidates submitted via LearnETRM are represented by LearnETRM for that role; any engagement, interview, or hiring resulting from the submission is deemed to originate from LearnETRM.</p>
-                <p className="font-medium text-gray-800 mb-1">6. No Hiring Guarantee</p>
-                <p className="mb-3">LearnETRM does not guarantee interviews, offers, or responses from recruiters. Hiring decisions remain entirely with the employer.</p>
-                <p className="font-medium text-gray-800 mb-1">7. Communication Consent</p>
-                <p className="mb-3">By signing in or applying, you consent to receive job-related emails from LearnETRM, including: application confirmations; status updates; new roles matching your profile. You may unsubscribe from non-essential notifications at any time.</p>
-                <p className="font-medium text-gray-800 mb-1">8. Data Usage & Privacy</p>
-                <p className="mb-3">Your data is used solely for recruitment-related purposes and handled in accordance with applicable data protection laws. LearnETRM does not sell candidate data or share it outside the scope of recruitment.</p>
-                <p className="font-medium text-gray-800 mb-1">9. Platform Rights</p>
-                <p className="mb-2">LearnETRM reserves the right to: modify or discontinue the platform; remove users or applications that violate these terms; update these terms periodically. Continued use of the platform constitutes acceptance of updated terms.</p>
-              </div>
-              <div className="border-t border-gray-200 bg-white p-4">
-                {!hasScrolledToBottom && (
-                  <p className="text-xs text-amber-600 mb-2">Scroll to the bottom of the terms above to enable this option.</p>
-                )}
-                <label className={`flex items-start gap-3 cursor-pointer ${!hasScrolledToBottom ? 'opacity-75' : ''}`}>
-                  <input
-                    type="checkbox"
-                    checked={termsAgreed}
-                    onChange={(e) => setTermsAgreed(e.target.checked)}
-                    disabled={!hasScrolledToBottom}
-                    className="mt-1 h-5 w-5 min-w-[20px] min-h-[20px] text-blue-600 focus:ring-blue-500 border-gray-300 rounded shrink-0"
-                    required
-                  />
-                  <span className="text-sm font-medium text-gray-900">
-                    I agree to the LearnETRM Terms & Conditions
-                  </span>
-                </label>
-              </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+              />
             </div>
-            
+            {otpError && <p className="text-sm text-red-600">{otpError}</p>}
             <button
-              onClick={handleGoogleSignIn}
-              disabled={isClearingCookies || !termsAgreed}
-              className="w-full flex items-center justify-center gap-3 px-4 py-4 min-h-[48px] text-base border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              type="submit"
+              disabled={otpLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              Continue with Google
+              {otpLoading ? 'Sending...' : 'Send verification code'}
             </button>
+          </form>
+
+          <p className="mt-2 text-sm text-gray-500 text-center">
+            If an account exists for this email, a code has been sent.
+          </p>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
+              <div className="relative flex justify-center text-sm"><span className="bg-white px-2 text-gray-500">Or continue with</span></div>
+            </div>
+            <div className="mt-6 space-y-2">
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={isClearingCookies || !termsAgreed}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 font-medium text-gray-700 disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                Google
+              </button>
+              <p className="text-center">
+                <Link href="/auth/login" className="text-sm text-indigo-600 hover:text-indigo-500">Sign in with email and password</Link>
+              </p>
+            </div>
           </div>
 
-          <div className="mt-6 space-y-2">
-            <p className="text-center text-sm text-gray-500">
-              Sign in with your Google account to access the recruiter and
-              candidate dashboards.
-            </p>
-            <p className="text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              If Google sign-in fails (e.g. &quot;insecure browser&quot; on mobile), use the <strong>magic link</strong> above: enter your email and we&apos;ll send you a sign-in link. Or try Chrome or Safari on your device.
-            </p>
+          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50">
+            <p className="text-xs font-medium text-amber-700 bg-amber-50 border-b border-amber-200 px-4 py-2">Please scroll to the bottom of the terms before agreeing.</p>
+            <div
+              ref={termsScrollRef}
+              className="max-h-48 overflow-y-auto p-4 text-sm text-gray-700"
+              onScroll={() => {
+                const el = termsScrollRef.current
+                if (el) setHasScrolledToBottom(el.scrollHeight - el.scrollTop <= el.clientHeight + 20)
+              }}
+            >
+              <p className="font-semibold mb-2">LearnETRM – Platform Terms</p>
+              <p className="mb-3">By signing in or applying, you agree to our terms. LearnETRM is a curated job platform. By applying, you authorize us to represent you for that role and share your profile with the hiring company.</p>
+              <p className="mb-3">You confirm your information is accurate and you have not applied to the same role through another channel.</p>
+              <p className="text-gray-600">By signing in you consent to job-related emails from LearnETRM.</p>
+            </div>
+            <div className="p-4 border-t">
+              <label className={`flex items-start gap-3 cursor-pointer ${!hasScrolledToBottom ? 'opacity-75' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={termsAgreed}
+                  onChange={(e) => setTermsAgreed(e.target.checked)}
+                  disabled={!hasScrolledToBottom}
+                  className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 rounded"
+                />
+                <span className="text-sm font-medium">I agree to the LearnETRM Terms & Conditions</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -402,11 +274,7 @@ function SignInContent() {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-gray-500">Loading...</div></div>}>
       <SignInContent />
     </Suspense>
   )

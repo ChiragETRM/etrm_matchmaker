@@ -23,7 +23,7 @@ export async function sendEmail(options: EmailOptions): Promise<{
   const provider = process.env.EMAIL_PROVIDER || 'SMTP'
 
   // Auto-detect provider based on available credentials
-  const hasSmtp = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD
+  const hasSmtp = process.env.SMTP_HOST && process.env.SMTP_USER && (process.env.SMTP_PASSWORD || process.env.SMTP_PASS)
   const hasPostmark = process.env.POSTMARK_API_KEY && process.env.POSTMARK_FROM_EMAIL
 
   // Use SMTP if explicitly set or if SMTP credentials are available
@@ -135,14 +135,14 @@ async function sendViaSMTP(
   const smtpHost = process.env.SMTP_HOST
   const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10)
   const smtpUser = process.env.SMTP_USER
-  const smtpPassword = process.env.SMTP_PASSWORD
+  const smtpPassword = process.env.SMTP_PASSWORD || process.env.SMTP_PASS
   const smtpFrom = process.env.SMTP_FROM || smtpUser
 
   if (!smtpHost || !smtpUser || !smtpPassword) {
     const missing = []
     if (!smtpHost) missing.push('SMTP_HOST')
     if (!smtpUser) missing.push('SMTP_USER')
-    if (!smtpPassword) missing.push('SMTP_PASSWORD')
+    if (!smtpPassword) missing.push('SMTP_PASSWORD or SMTP_PASS')
     console.error('SMTP credentials not configured. Missing:', missing.join(', '))
     return {
       messageId: '',

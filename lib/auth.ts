@@ -1,9 +1,12 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
+import Credentials from 'next-auth/providers/credentials'
 import Email from 'next-auth/providers/email'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from './prisma'
 import { sendEmail } from './email'
+import { verifyPassword } from './password'
+import { checkLoginLimit } from './auth-rate-limit'
 
 // NextAuth v5 reads AUTH_SECRET directly from process.env for CSRF token
 // validation and cookie signing. If only NEXTAUTH_SECRET is set, sync it
@@ -70,7 +73,7 @@ const emailServer = {
   port: parseInt(process.env.SMTP_PORT || '25', 10),
   auth: {
     user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASSWORD || '',
+    pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '',
   },
 }
 
@@ -110,7 +113,59 @@ const googleProvider = hasGoogle
     })
   : null
 
-const providers = googleProvider ? [emailProvider, googleProvider] : [emailProvider]
+const credentialsProvider = Credentials({
+  id: 'credentials',
+  name: 'Email and Password',
+  credentials: {
+    token: { label: 'Token', type: 'text' },
+    email: { label: 'Email', type: 'email' },
+    password: { label: 'Password', type: 'password' },
+  },
+  async authorize(credentials) {
+    if (!credentials) return null
+
+    const token = credentials.token as string | undefined
+    const email = credentials.email as string | undefined
+    const password = credentials.password as string | undefined
+
+    // OTP verification token flow
+    if (token && token.length > 0) {
+      const record = await prisma.otpVerificationToken.findUnique({
+        where: { token },
+      })
+      if (!record || record.expiresAt < new Date()) {
+        if (record) await prisma.otpVerificationToken.delete({ where: { id: record.id } })
+        return null
+      }
+      const user = await prisma.user.findUnique({ where: { id: record.userId } })
+      await prisma.otpVerificationToken.delete({ where: { id: record.id } })
+      if (!user) return null
+      return { id: user.id, email: user.email, name: user.name, image: user.image }
+    }
+
+    // Email + password flow
+    if (email && password) {
+      const emailNorm = email.trim().toLowerCase()
+      // Rate limit by email (IP not available in authorize)
+      const limit = checkLoginLimit(`email:${emailNorm}`)
+      if (!limit.allowed) return null
+
+      const user = await prisma.user.findUnique({
+        where: { email: emailNorm },
+      })
+      if (!user?.passwordHash) return null
+      const valid = await verifyPassword(password, user.passwordHash)
+      if (!valid) return null
+      return { id: user.id, email: user.email, name: user.name, image: user.image }
+    }
+
+    return null
+  },
+})
+
+const providers = googleProvider
+  ? [credentialsProvider, emailProvider, googleProvider]
+  : [credentialsProvider, emailProvider]
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),

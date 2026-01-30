@@ -101,9 +101,18 @@ AUTH_URL="http://localhost:3000"  # Optional for local dev
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
+# Email OTP & SMTP (required for email sign-in and password reset)
+SMTP_HOST="smtp.example.com"
+SMTP_PORT="587"
+SMTP_USER="your-smtp-username"
+SMTP_PASSWORD="your-smtp-password"   # or SMTP_PASS
+SMTP_FROM="noreply@learnetrm.com"
+
+# Optional: Cron secret for cleanup jobs (expired OTP, tokens)
+CRON_SECRET="optional-cron-secret"
+
 # For MVP, you can skip these initially:
 # - File storage (will use placeholder)
-# - Email provider (will fail gracefully)
 # - CAPTCHA (optional for local dev)
 ```
 
@@ -115,6 +124,12 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 AUTH_SECRET="generate-a-random-secret-for-local-dev"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
+# SMTP required for email OTP sign-in (Gmail, SendGrid, etc.)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASSWORD="your-app-password"
+SMTP_FROM="noreply@learnetrm.com"
 ```
 
 ### 3a. Set Up Google OAuth (for SSO)

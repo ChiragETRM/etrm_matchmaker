@@ -20,13 +20,15 @@
     "db:apply-google-profile-migration": "tsx scripts/apply-google-profile-migration.ts",
     "db:fix-auth-schema": "tsx scripts/fix-auth-schema.ts",
     "db:studio": "prisma studio",
-    "seed:jobs": "tsx scripts/seed-jobs.ts"
+    "seed:jobs": "tsx scripts/seed-jobs.ts",
+    "db:delete-test-jobs": "tsx scripts/delete-test-jobs.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^5.7.1",
     "@tailwindcss/typography": "^0.5.19",
     "@types/nodemailer": "^7.0.9",
+    "argon2": "^0.44.0",
     "next": "^14.2.0",
     "next-auth": "^5.0.0-beta.30",
     "nodemailer": "^7.0.12",
