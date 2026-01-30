@@ -86,12 +86,14 @@ if (!isProduction) {
   console.log('[NextAuth Config] Google:', hasGoogle ? 'enabled' : 'disabled (set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable)')
 }
 
-// Use state-only for Google in serverless to avoid PKCE cookie parsing issues
-// (pkceCodeVerifier cookie can be lost between redirects on Vercel). Still secure with client_secret.
+// Use state-only for Google in serverless to avoid PKCE cookie parsing issues.
+// allowDangerousEmailAccountLinking: when the Google email already exists (e.g. from OTP/password),
+// link the Google account to that user and sign them in instead of showing "already associated".
 const googleProvider = hasGoogle
   ? Google({
       clientId: googleClientId!,
       clientSecret: googleClientSecret!,
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           prompt: 'consent',
@@ -306,7 +308,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         sameSite: 'lax',
         path: '/',
         secure: isProduction,
-        maxAge: 60 * 15, // 15 minutes
+        maxAge: 60 * 20, // 20 minutes — reduces "state could not be parsed" when user is slow on Google
       },
     },
   },

@@ -41,7 +41,7 @@ async function handleRequest(
   try {
     const response = await handler(req)
 
-    // Inspect redirects: if NextAuth redirected to error (e.g. InvalidCheck/PKCE), show PKCEError so user can clear cookies
+    // Inspect redirects: if NextAuth redirected to error (InvalidCheck = state/cookie), send StateError so sign-in page clears cookies
     if (response.status === 302) {
       const location = response.headers.get('location') || ''
       try {
@@ -53,10 +53,12 @@ async function handleRequest(
         ) {
           if (err === 'InvalidCheck' || err === 'Callback') {
             const signInUrl = new URL('/auth/signin', req.url)
-            signInUrl.searchParams.set('error', 'PKCEError')
+            signInUrl.searchParams.set('error', 'StateError')
             signInUrl.searchParams.set(
               'details',
-              encodeURIComponent('Session expired or cookies were lost. Please try again (clear cookies if it persists).')
+              encodeURIComponent(
+                'Session state expired or was lost. Clear cookies for this site and try again in a single tab.'
+              )
             )
             return NextResponse.redirect(signInUrl)
           }
@@ -130,52 +132,54 @@ async function handleRequest(
         return NextResponse.redirect(url)
       }
       
-      // Handle PKCE code verifier errors
-      // This often happens when cookies are corrupted, expired, or not properly set
+      // Handle state cookie parsing errors first (state value could not be parsed).
+      // Must run before the generic invalidcheck block so state errors get StateError not PKCEError.
+      if (
+        errorMessage.includes('state') &&
+        (errorMessage.includes('could not be parsed') ||
+          errorMessage.includes('invalidcheck') ||
+          errorMessage.includes('parsing'))
+      ) {
+        console.error('[NextAuth] State cookie parsing error:', {
+          error: error.message,
+          url: req.url,
+          hasCookies: req.headers.get('cookie') ? 'yes' : 'no',
+        })
+        const url = new URL('/auth/signin', req.url)
+        url.searchParams.set('error', 'StateError')
+        url.searchParams.set(
+          'details',
+          encodeURIComponent(
+            'Session state expired or was lost (common when signing in from another tab or after a delay). Clear cookies for this site and try again in a single tab.'
+          )
+        )
+        return NextResponse.redirect(url)
+      }
+
+      // Handle PKCE code verifier errors (we use state-only for Google, but keep for other providers)
       if (
         errorMessage.includes('pkcecodeverifier') ||
-        errorMessage.includes('pkce') ||
-        errorMessage.includes('invalidcheck') ||
         errorMessage.includes('invalid_grant') ||
         errorMessage.includes('code verifier') ||
         errorMessage.includes('code_verifier')
       ) {
-        console.error('[NextAuth] PKCE error detected:', {
-          error: error.message,
-          url: req.url,
-          // Log cookie headers for debugging (in production, check logs)
-          hasCookies: req.headers.get('cookie') ? 'yes' : 'no',
-        })
-        
-        // Redirect to sign-in with error message
-        // The user should clear cookies and try again
         const url = new URL('/auth/signin', req.url)
         url.searchParams.set('error', 'PKCEError')
-        url.searchParams.set('details', encodeURIComponent('Authentication error. Please clear your browser cookies and try again.'))
+        url.searchParams.set(
+          'details',
+          encodeURIComponent('Authentication error. Please clear your browser cookies and try again.')
+        )
         return NextResponse.redirect(url)
       }
-      
-      // Handle state cookie parsing errors
-      // This happens when the state cookie is corrupted, expired, or can't be decrypted
-      if (
-        errorMessage.includes('state') && 
-        (errorMessage.includes('could not be parsed') ||
-         errorMessage.includes('invalidcheck') ||
-         errorMessage.includes('parsing'))
-      ) {
-        console.error('[NextAuth] State cookie parsing error detected:', {
-          error: error.message,
-          url: req.url,
-          hasCookies: req.headers.get('cookie') ? 'yes' : 'no',
-          // Check if AUTH_SECRET is set (without logging the value)
-          hasAuthSecret: !!process.env.AUTH_SECRET,
-        })
-        
-        // Redirect to sign-in with error message
-        // The user should clear cookies and try again
+
+      // Other InvalidCheck (e.g. generic) — treat as state/session error since we use state for Google
+      if (errorMessage.includes('invalidcheck')) {
         const url = new URL('/auth/signin', req.url)
         url.searchParams.set('error', 'StateError')
-        url.searchParams.set('details', encodeURIComponent('Session state error. Please clear your browser cookies and try again.'))
+        url.searchParams.set(
+          'details',
+          encodeURIComponent('Session check failed. Clear cookies for this site and try again.')
+        )
         return NextResponse.redirect(url)
       }
     }
