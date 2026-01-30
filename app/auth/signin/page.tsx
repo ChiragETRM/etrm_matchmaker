@@ -52,14 +52,15 @@ function SignInContent() {
   const termsScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Only clear cookies on specific auth errors that require a fresh start
+    // Clear cookies on auth errors that need a fresh start; then redirect WITHOUT error so user gets clean page
     if (error && !isClearingCookies && ['Configuration', 'AccessDenied', 'PKCEError', 'StateError'].includes(error)) {
       clearAuthCookies()
       setIsClearingCookies(true)
       signOut({ redirect: false }).then(() => {
         setTimeout(() => {
           const signInUrl = new URL('/auth/signin', window.location.href)
-          signInUrl.searchParams.set('error', error)
+          signInUrl.searchParams.delete('error')
+          signInUrl.searchParams.delete('details')
           if (callbackUrl && callbackUrl !== '/dashboard') signInUrl.searchParams.set('callbackUrl', callbackUrl)
           window.location.href = signInUrl.toString()
         }, 100)
@@ -186,7 +187,6 @@ function SignInContent() {
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600 font-medium">
                 {error === 'OAuthAccountNotLinked' ? 'This email is already associated with another account.'
-                  : error === 'Configuration' ? 'Authentication configuration error. Please try again after clearing cookies.'
                   : error === 'PKCEError' || error === 'StateError' ? 'Session error. Please clear cookies and try again.'
                   : 'An error occurred. Please try again.'}
               </p>

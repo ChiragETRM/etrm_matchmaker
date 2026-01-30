@@ -29,13 +29,12 @@ async function handleRequest(
   handler: (req: NextRequest) => Promise<Response>,
   req: NextRequest
 ) {
-  // Validate configuration first
   const validation = validateAuthConfig(req)
   if (!validation.valid) {
-    console.error('[NextAuth] Configuration validation failed:', validation.error)
+    console.error('[NextAuth] Validation failed:', validation.error)
     const signInUrl = new URL('/auth/signin', req.url)
-    signInUrl.searchParams.set('error', 'Configuration')
-    signInUrl.searchParams.set('details', encodeURIComponent(validation.error || 'Configuration error'))
+    signInUrl.searchParams.set('error', 'SignInError')
+    signInUrl.searchParams.set('details', encodeURIComponent(validation.error || 'Missing AUTH_SECRET or NEXTAUTH_SECRET. Add it in Vercel Project Settings > Environment Variables for Production.'))
     return NextResponse.redirect(signInUrl)
   }
   
@@ -84,9 +83,10 @@ async function handleRequest(
         try {
           const clonedResponse = response.clone()
           const text = await clonedResponse.text()
-          if (text.includes('Configuration') || text.includes('AUTH_SECRET') || text.includes('GOOGLE_CLIENT')) {
+          if (text.includes('AUTH_SECRET') || text.includes('GOOGLE_CLIENT') || text.includes('clientId') || text.includes('client_secret')) {
             const signInUrl = new URL('/auth/signin', req.url)
-            signInUrl.searchParams.set('error', 'Configuration')
+            signInUrl.searchParams.set('error', 'SignInError')
+            signInUrl.searchParams.set('details', encodeURIComponent('Server configuration error. Set AUTH_SECRET and GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in Vercel Project Settings > Environment Variables for Production, then redeploy.'))
             return NextResponse.redirect(signInUrl)
           }
         } catch {
@@ -102,16 +102,13 @@ async function handleRequest(
     if (error instanceof Error) {
       const errorMessage = error.message.toLowerCase()
 
-      // Only treat as Configuration when AUTH_SECRET/NEXTAUTH_SECRET is the problem.
-      // Do NOT match broad "missing"/"required" — that incorrectly catches provider
-      // errors like "clientId is required" and shows "Configuration" for Google.
       if (
         errorMessage.includes('auth_secret') ||
         errorMessage.includes('nextauth_secret')
       ) {
         const url = new URL('/auth/signin', req.url)
-        url.searchParams.set('error', 'Configuration')
-        url.searchParams.set('details', encodeURIComponent(error.message))
+        url.searchParams.set('error', 'SignInError')
+        url.searchParams.set('details', encodeURIComponent(error.message + ' Set AUTH_SECRET or NEXTAUTH_SECRET in Vercel Environment Variables for Production.'))
         return NextResponse.redirect(url)
       }
 
