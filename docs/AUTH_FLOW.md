@@ -75,8 +75,8 @@ CRON_SECRET="..."
 
 ## Security
 
-- OTP stored hashed (argon2), never plaintext
-- Password stored hashed (argon2)
+- OTP and password stored hashed (bcrypt), never plaintext
+- bcryptjs is used (pure JS) so it runs on Vercel/serverless without native build issues. If you previously used argon2, existing password hashes are incompatible; users can use “Forgot password” to set a new one.
 - Rate limiting: per IP and per email
 - No account enumeration in messages
 - CSRF protection via NextAuth

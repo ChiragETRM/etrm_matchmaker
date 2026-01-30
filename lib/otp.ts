@@ -1,8 +1,9 @@
-import * as argon2 from 'argon2'
+import * as bcrypt from 'bcryptjs'
 import { randomInt } from 'crypto'
 
 const OTP_LENGTH = 6
 const OTP_EXPIRY_MINUTES = 10
+const OTP_SALT_ROUNDS = 10
 
 export function generateOtp(): string {
   // Generate 6-digit numeric OTP (000000-999999)
@@ -12,16 +13,12 @@ export function generateOtp(): string {
 }
 
 export async function hashOtp(otp: string): Promise<string> {
-  return argon2.hash(otp, {
-    type: argon2.argon2id,
-    memoryCost: 65536,
-    timeCost: 2,
-  })
+  return bcrypt.hash(otp, OTP_SALT_ROUNDS)
 }
 
 export async function verifyOtpHash(otp: string, hash: string): Promise<boolean> {
   try {
-    return await argon2.verify(hash, otp)
+    return await bcrypt.compare(otp, hash)
   } catch {
     return false
   }
