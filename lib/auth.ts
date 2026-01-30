@@ -1,7 +1,9 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
+import Email from 'next-auth/providers/email'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from './prisma'
+import { sendEmail } from './email'
 
 // NextAuth v5 reads AUTH_SECRET directly from process.env for CSRF token
 // validation and cookie signing. If only NEXTAUTH_SECRET is set, sync it
@@ -14,13 +16,11 @@ if (!process.env.AUTH_SECRET && process.env.NEXTAUTH_SECRET) {
 const authSecret = process.env.AUTH_SECRET
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+const hasGoogle = !!(googleClientId && googleClientSecret)
 
-// Validate required configuration
+// Validate required configuration (at least one auth method)
 if (!authSecret) {
   throw new Error('AUTH_SECRET or NEXTAUTH_SECRET environment variable is required')
-}
-if (!googleClientId || !googleClientSecret) {
-  throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables are required')
 }
 
 // Determine AUTH_URL - NextAuth v5 uses this via environment variables automatically
@@ -61,22 +61,43 @@ const isProduction = process.env.NODE_ENV === 'production'
 if (!isProduction) {
   console.log('[NextAuth Config] AUTH_URL:', authUrl)
   console.log('[NextAuth Config] AUTH_SECRET:', authSecret ? '***set***' : 'MISSING')
-  console.log('[NextAuth Config] GOOGLE_CLIENT_ID:', googleClientId ? '***set***' : 'MISSING')
-  console.log('[NextAuth Config] GOOGLE_CLIENT_SECRET:', googleClientSecret ? '***set***' : 'MISSING')
+  console.log('[NextAuth Config] Google:', hasGoogle ? 'enabled' : 'disabled (set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable)')
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  secret: authSecret,
-  // Explicitly set the base URL for NextAuth
-  basePath: '/api/auth',
-  // Note: NextAuth v5 automatically detects URL from AUTH_URL, NEXTAUTH_URL, or VERCEL_URL env vars
-  // trustHost: true enables automatic URL detection from request headers
-  providers: [
-    Google({
-      clientId: googleClientId,
-      clientSecret: googleClientSecret,
-      // Request additional scopes to get maximum user information
+// Minimal server config so Email provider initializes; we use sendVerificationRequest for actual sending
+const emailServer = {
+  host: process.env.SMTP_HOST || 'localhost',
+  port: parseInt(process.env.SMTP_PORT || '25', 10),
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASSWORD || '',
+  },
+}
+
+const emailProvider = Email({
+  server: emailServer,
+  from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@learnetrm.com',
+  sendVerificationRequest: async ({ identifier: email, url }) => {
+    const { success, error } = await sendEmail({
+      to: email,
+      subject: 'Sign in to LearnETRM',
+      html: `
+          <p>Click the link below to sign in to LearnETRM:</p>
+          <p><a href="${url}" style="word-break:break-all">${url}</a></p>
+          <p>This link expires in 24 hours. If you didn't request this, you can ignore this email.</p>
+        `,
+    })
+    if (!success) {
+      console.error('[NextAuth Email] Failed to send magic link:', error)
+      throw new Error(error || 'Failed to send sign-in email')
+    }
+  },
+})
+
+const googleProvider = hasGoogle
+  ? Google({
+      clientId: googleClientId!,
+      clientSecret: googleClientSecret!,
       authorization: {
         params: {
           prompt: 'consent',
@@ -85,12 +106,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           scope: 'openid email profile https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         },
       },
-      // Use PKCE only: avoids "InvalidCheck: state value could not be parsed" in serverless
-      // (state cookie can fail on Vercel due to cookie isolation between invocations).
-      // PKCE alone is sufficient for the authorization code flow.
       checks: ['pkce'],
-    }),
-  ],
+    })
+  : null
+
+const providers = googleProvider ? [emailProvider, googleProvider] : [emailProvider]
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma),
+  secret: authSecret,
+  basePath: '/api/auth',
+  providers,
   pages: {
     signIn: '/auth/signin',
     error: '/auth/signin', // Redirect errors to sign-in page

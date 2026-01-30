@@ -46,8 +46,18 @@ const jobSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  let body: unknown
   try {
-    const body = await request.json()
+    body = await request.json()
+  } catch (parseError) {
+    console.error('Invalid JSON body:', parseError)
+    return NextResponse.json(
+      { success: false, error: 'Invalid request body. Please check your form data.' },
+      { status: 400 }
+    )
+  }
+
+  try {
     const data = jobSchema.parse(body)
 
     const expiresAt = new Date()
@@ -97,20 +107,31 @@ export async function POST(request: NextRequest) {
               },
               gateRules: {
                 create: data.gateRules.map((r) => {
-                  // Ensure value is properly serialized
+                  // Ensure value is JSON-serializable (no undefined, functions, etc.)
                   let value = r.value
-                  if (typeof value === 'string') {
+                  if (value === undefined || value === null) {
+                    value = null
+                  } else if (typeof value === 'string') {
                     try {
                       value = JSON.parse(value)
                     } catch {
-                      // If not JSON, keep as string
+                      value = value
                     }
+                  } else if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)) {
+                    value = JSON.parse(JSON.stringify(value))
                   }
+                  const valueJson = (() => {
+                    try {
+                      return JSON.stringify(value)
+                    } catch {
+                      return 'null'
+                    }
+                  })()
                   return {
-                    questionKey: r.questionKey,
+                    questionKey: String(r.questionKey),
                     operator: r.operator,
-                    valueJson: JSON.stringify(value),
-                    orderIndex: r.orderIndex,
+                    valueJson,
+                    orderIndex: Number(r.orderIndex),
                   }
                 }),
               },

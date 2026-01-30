@@ -98,8 +98,8 @@ export default function SubmitApplicationPage() {
         setIsSubmitting(false)
         return
       }
-      if (digitsOnly.length < 6) {
-        setError('candidatePhone', { type: 'minLength', message: 'Enter at least 6 digits (international numbers accepted)' })
+      if (digitsOnly.length < 10) {
+        setError('candidatePhone', { type: 'minLength', message: 'Phone number must be at least 10 digits' })
         setIsSubmitting(false)
         return
       }
@@ -190,43 +190,51 @@ export default function SubmitApplicationPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label htmlFor="candidateName" className="block text-sm font-medium mb-1">
                   Full Name *
                 </label>
                 <input
+                  id="candidateName"
                   {...register('candidateName', { required: true })}
-                  className="w-full border rounded px-3 py-2"
+                  className={`w-full border rounded px-3 py-2 min-h-[48px] ${errors.candidateName ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'}`}
                   required
+                  aria-required="true"
+                  aria-invalid={!!errors.candidateName}
+                  aria-describedby={errors.candidateName ? 'candidateName-error' : undefined}
                 />
                 {errors.candidateName && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p id="candidateName-error" className="text-red-500 text-sm mt-1" role="alert">
                     Name is required
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label htmlFor="candidateEmail" className="block text-sm font-medium mb-1">
                   Email *
                 </label>
                 <input
+                  id="candidateEmail"
                   type="email"
                   {...register('candidateEmail', {
                     required: true,
                     pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                   })}
-                  className="w-full border rounded px-3 py-2"
+                  className={`w-full border rounded px-3 py-2 min-h-[48px] ${errors.candidateEmail ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'}`}
                   required
+                  aria-required="true"
+                  aria-invalid={!!errors.candidateEmail}
+                  aria-describedby={errors.candidateEmail ? 'candidateEmail-error' : undefined}
                 />
                 {errors.candidateEmail && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p id="candidateEmail-error" className="text-red-500 text-sm mt-1" role="alert">
                     Valid email is required
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label htmlFor="phone" className="block text-sm font-medium mb-1">
                   Phone *
                 </label>
                 <div className="flex gap-2">
@@ -234,8 +242,8 @@ export default function SubmitApplicationPage() {
                     id="phone-country"
                     value={phoneCountryCode}
                     onChange={(e) => setPhoneCountryCode(e.target.value)}
-                    className="w-[140px] shrink-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-                    aria-label="Country code"
+                    className="w-[140px] shrink-0 px-3 py-2 min-h-[48px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                    aria-label="Country code for phone number"
                   >
                     {PHONE_COUNTRIES.map((c) => (
                       <option key={c.code} value={c.code}>
@@ -248,34 +256,40 @@ export default function SubmitApplicationPage() {
                     id="phone"
                     value={phoneNational}
                     onChange={(e) => setPhoneNational(e.target.value)}
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder={phoneCountryCode === 'OTHER' ? 'e.g. +44 20 7123 4567' : 'e.g. 234 567 8900 (min 6 digits)'}
-                    aria-label="Phone number"
+                    className={`flex-1 min-w-0 px-3 py-2 min-h-[48px] border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${errors.candidatePhone ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'}`}
+                    placeholder={phoneCountryCode === 'OTHER' ? 'e.g. +44 20 7123 4567' : 'e.g. 234 567 8900 (min 10 digits)'}
+                    aria-label="Phone number (at least 10 digits)"
+                    aria-required="true"
+                    aria-invalid={!!errors.candidatePhone}
+                    aria-describedby={errors.candidatePhone ? 'candidatePhone-error' : undefined}
                     required
                   />
                 </div>
                 {errors.candidatePhone && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p id="candidatePhone-error" className="text-red-500 text-sm mt-1" role="alert">
                     {errors.candidatePhone.message as string}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label htmlFor="candidateLinkedin" className="block text-sm font-medium mb-1">
                   LinkedIn Profile
                 </label>
                 <input
+                  id="candidateLinkedin"
                   type="url"
                   {...register('candidateLinkedin', {
                     pattern: /^https?:\/\/.*linkedin\.com\/.*/,
                   })}
-                  className="w-full border rounded px-3 py-2"
+                  className={`w-full border rounded px-3 py-2 min-h-[48px] ${errors.candidateLinkedin ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-300'}`}
                   placeholder="https://linkedin.com/in/yourprofile"
+                  aria-invalid={!!errors.candidateLinkedin}
+                  aria-describedby={errors.candidateLinkedin ? 'candidateLinkedin-error' : undefined}
                 />
                 {errors.candidateLinkedin && (
-                  <p className="text-red-500 text-sm mt-1">
-                    Please enter a valid LinkedIn URL
+                  <p id="candidateLinkedin-error" className="text-red-500 text-sm mt-1" role="alert">
+                    Please enter a valid LinkedIn URL (e.g. https://linkedin.com/in/yourprofile)
                   </p>
                 )}
               </div>

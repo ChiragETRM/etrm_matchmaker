@@ -8,7 +8,11 @@ import { z } from 'zod'
 const submitSchema = z.object({
   candidateName: z.string().min(1),
   candidateEmail: z.string().email(),
-  candidatePhone: z.string().trim().min(1, 'Phone is required'),
+  candidatePhone: z
+    .string()
+    .trim()
+    .min(1, 'Phone is required')
+    .refine((val) => val.replace(/\D/g, '').length >= 10, 'Phone number must be at least 10 digits'),
   candidateLinkedin: z.string().url().optional().or(z.literal('')),
   consent: z.boolean().refine((val) => val === true, {
     message: 'Consent is required',

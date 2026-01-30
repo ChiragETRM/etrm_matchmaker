@@ -42,6 +42,9 @@ function SignInContent() {
   const [isClearingCookies, setIsClearingCookies] = useState(false)
   const [termsAgreed, setTermsAgreed] = useState(false)
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
+  const [magicLinkEmail, setMagicLinkEmail] = useState('')
+  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
   const termsScrollRef = useRef<HTMLDivElement>(null)
 
   // Handle errors by clearing cookies and retrying
@@ -124,30 +127,58 @@ function SignInContent() {
     }
   }, [status, session, callbackUrl, router, searchParams])
 
-  const handleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     if (!termsAgreed) {
       alert('Please agree to the LearnETRM Terms & Conditions to continue.')
       return
     }
 
-    // Clear any stale cookies before signing in
     clearAuthCookies()
     setIsClearingCookies(true)
     
     try {
-      // Store the terms agreement in sessionStorage to pass to the callback
       sessionStorage.setItem('termsAgreed', 'true')
-      
       await signIn('google', { 
         callbackUrl: `${callbackUrl}?termsAgreed=true`,
         redirect: true,
       })
     } catch (err) {
       console.error('Sign in error:', err)
-      // Clear cookies on error
       clearAuthCookies()
-      // Reload page
       window.location.href = '/auth/signin?error=SignInError'
+    }
+  }
+
+  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!termsAgreed) {
+      alert('Please agree to the LearnETRM Terms & Conditions to continue.')
+      return
+    }
+    const email = magicLinkEmail.trim()
+    if (!email) {
+      alert('Please enter your email address.')
+      return
+    }
+    setMagicLinkLoading(true)
+    setMagicLinkSent(false)
+    try {
+      const result = await signIn('email', {
+        email,
+        callbackUrl: `${callbackUrl}?termsAgreed=true`,
+        redirect: false,
+      })
+      if (result?.error) {
+        alert(result.error === 'EmailSignin' ? 'Failed to send sign-in email. Check your email configuration or try Google sign-in.' : String(result.error))
+        setMagicLinkLoading(false)
+        return
+      }
+      setMagicLinkSent(true)
+    } catch (err) {
+      console.error('Magic link error:', err)
+      alert('Failed to send sign-in email. Please try again or use Google sign-in.')
+    } finally {
+      setMagicLinkLoading(false)
     }
   }
 
@@ -230,6 +261,47 @@ function SignInContent() {
           )}
 
           <div className="space-y-4">
+            {/* Magic-link (email) sign-in — works when Google OAuth is blocked */}
+            <form onSubmit={handleMagicLinkSubmit} className="space-y-3">
+              <label htmlFor="magic-link-email" className="block text-sm font-medium text-gray-700">
+                Sign in with email (magic link)
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="magic-link-email"
+                  type="email"
+                  value={magicLinkEmail}
+                  onChange={(e) => setMagicLinkEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  disabled={magicLinkLoading}
+                  className="flex-1 min-w-0 px-4 py-3 min-h-[48px] border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none text-base"
+                  aria-label="Email address for magic link sign-in"
+                />
+                <button
+                  type="submit"
+                  disabled={magicLinkLoading || !magicLinkEmail.trim()}
+                  className="px-4 py-3 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap touch-manipulation"
+                >
+                  {magicLinkLoading ? 'Sending…' : 'Send magic link'}
+                </button>
+              </div>
+              {magicLinkSent && (
+                <p className="text-sm text-green-600 font-medium" role="status">
+                  Check your email for a sign-in link. It may take a minute.
+                </p>
+              )}
+            </form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-gray-500">Or continue with Google</span>
+              </div>
+            </div>
+
             {/* Readable Terms & Conditions */}
             <div className="rounded-lg border border-gray-200 bg-gray-50">
               <p className="text-xs font-medium text-amber-700 bg-amber-50 border-b border-amber-200 px-4 py-2">
@@ -287,11 +359,11 @@ function SignInContent() {
             </div>
             
             <button
-              onClick={handleSignIn}
+              onClick={handleGoogleSignIn}
               disabled={isClearingCookies || !termsAgreed}
-              className="w-full flex items-center justify-center gap-3 px-4 py-4 min-h-[48px] text-base border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-3 px-4 py-4 min-h-[48px] text-base border-2 border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden>
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -319,7 +391,7 @@ function SignInContent() {
               candidate dashboards.
             </p>
             <p className="text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              If Google sign-in fails (e.g. &quot;insecure browser&quot; on mobile), try opening this page in Chrome or Safari on your device, or sign in on a desktop browser.
+              If Google sign-in fails (e.g. &quot;insecure browser&quot; on mobile), use the <strong>magic link</strong> above: enter your email and we&apos;ll send you a sign-in link. Or try Chrome or Safari on your device.
             </p>
           </div>
         </div>

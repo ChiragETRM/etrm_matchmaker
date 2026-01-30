@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Nav from './components/Nav'
 import SessionProvider from './components/SessionProvider'
+import { ToastProvider } from './components/Toast'
 
 export const metadata: Metadata = {
   title: 'Hand Picked ETRM/CTRM Jobs',
@@ -17,8 +18,10 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-gray-50">
         <SessionProvider>
-          <Nav />
-          {children}
+          <ToastProvider>
+            <Nav />
+            {children}
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

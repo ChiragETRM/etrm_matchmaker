@@ -51,7 +51,7 @@ export default function FilterJobsPage() {
   const [multiValues, setMultiValues] = useState<Record<string, string[]>>({})
   const [existingAnswers, setExistingAnswers] = useState<Record<string, any>>({})
   const [hasAutoFiltered, setHasAutoFiltered] = useState(false)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false) // collapsed on small screens by default
   const { register, handleSubmit, watch, setValue } = useForm()
 
   // Fetch questions
@@ -208,8 +208,8 @@ export default function FilterJobsPage() {
                 </svg>
               </button>
             </div>
-            {/* Left Sidebar - Filters (collapsible on mobile) */}
-            <div className={`w-full lg:w-80 flex-shrink-0 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
+            {/* Left Sidebar - Filters (collapsed on small screens, expand via toggle) */}
+            <div className={`w-full lg:w-80 flex-shrink-0 ${filtersOpen ? 'block' : 'hidden lg:block'}`} role="region" aria-label="Filter criteria">
               <form
                 onSubmit={handleSubmit(onSubmit)}
                 className="bg-white p-6 rounded-xl shadow lg:sticky lg:top-4"
@@ -269,12 +269,12 @@ export default function FilterJobsPage() {
                       </label>
                       {q.type === 'BOOLEAN' && (
                         <div className="space-y-3">
-                          <label className="flex items-center gap-3 min-h-[44px] py-1 cursor-pointer">
-                            <input type="radio" value="true" {...register(q.key)} className="w-5 h-5 text-indigo-600" />
+                          <label className="flex items-center gap-3 min-h-[44px] py-2 cursor-pointer touch-manipulation">
+                            <input type="radio" value="true" {...register(q.key)} className="w-5 h-5 min-w-[20px] min-h-[20px] text-indigo-600" aria-label={`${q.label} Yes`} />
                             <span className="text-sm">Yes</span>
                           </label>
-                          <label className="flex items-center gap-3 min-h-[44px] py-1 cursor-pointer">
-                            <input type="radio" value="false" {...register(q.key)} className="w-5 h-5 text-indigo-600" />
+                          <label className="flex items-center gap-3 min-h-[44px] py-2 cursor-pointer touch-manipulation">
+                            <input type="radio" value="false" {...register(q.key)} className="w-5 h-5 min-w-[20px] min-h-[20px] text-indigo-600" aria-label={`${q.label} No`} />
                             <span className="text-sm">No</span>
                           </label>
                         </div>
@@ -335,7 +335,8 @@ export default function FilterJobsPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full mt-6 px-4 py-3 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-base transition"
+                  className="w-full mt-6 px-4 py-3 min-h-[48px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-base transition touch-manipulation"
+                  aria-busy={submitting}
                 >
                   {submitting ? 'Finding jobs…' : sessionStatus === 'authenticated' && (Object.keys(existingAnswers).length > 0 || Object.keys(multiValues).length > 0) ? 'Update & Find jobs' : 'Find my jobs'}
                 </button>

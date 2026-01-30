@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
+import { useToast } from '@/app/components/Toast'
 import { renderSimpleMarkdown } from '@/lib/markdown'
 import { daysLeftToApply } from '@/lib/utils'
 
@@ -232,6 +233,7 @@ export default function JobDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { showToast } = useToast()
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(true)
   const [oneClickLoading, setOneClickLoading] = useState(false)
@@ -373,13 +375,14 @@ export default function JobDetailPage() {
       if (response.ok && data.success) {
         setJobAlertSuccess(true)
         setJobAlertEmail('')
+        showToast('success', 'You\'re subscribed! We\'ll send job alerts to your email.')
         setTimeout(() => setJobAlertSuccess(false), 5000)
       } else {
-        alert(data.error || 'Failed to subscribe. Please try again.')
+        showToast('error', data.error || 'Failed to subscribe. Please try again.')
       }
     } catch (error) {
       console.error('Error subscribing to job alerts:', error)
-      alert('An error occurred. Please try again.')
+      showToast('error', 'An error occurred. Please try again.')
     } finally {
       setJobAlertLoading(false)
     }

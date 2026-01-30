@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useToast } from '@/app/components/Toast'
 
 interface GateRule {
   type: 'years_experience' | 'language' | 'commodity' | 'work_permit' | 'other'
@@ -25,6 +26,11 @@ const COUNTRIES = [
   'Netherlands', 'Switzerland', 'Singapore', 'Japan', 'Australia', 'Canada',
   'Other'
 ]
+
+// Minimum Requirements section disabled until server-side handling is fully stable
+const POST_JOB_DRAFT_KEY = 'postJobDraft'
+
+const REQUIREMENTS_SECTION_ENABLED = false
 
 const BOILERPLATE_JD = {
   ETRM_BA: `ETRM Business Analyst (**Endur**)
@@ -104,6 +110,7 @@ You break things before traders do. You make sure **Endur** behaves exactly as t
 export default function PostJobPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { showToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [budgetMinK, setBudgetMinK] = useState(70)
   const [budgetMaxK, setBudgetMaxK] = useState(185)
@@ -141,6 +148,67 @@ export default function PostJobPage() {
     }
   }, [status, session, setValue])
 
+  // Restore draft from sessionStorage on mount (persist after error/refresh)
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? sessionStorage.getItem(POST_JOB_DRAFT_KEY) : null
+      if (!raw) return
+      const draft = JSON.parse(raw) as Record<string, unknown>
+      if (draft.title) setValue('title', String(draft.title))
+      if (draft.companyName) setValue('companyName', String(draft.companyName))
+      if (draft.locationText) setValue('locationText', String(draft.locationText))
+      if (draft.remotePolicy) setValue('remotePolicy', String(draft.remotePolicy) as any)
+      if (draft.contractType) setValue('contractType', String(draft.contractType) as any)
+      if (draft.experienceRange) setValue('experienceRange', String(draft.experienceRange) as any)
+      if (draft.roleCategory) setValue('roleCategory', String(draft.roleCategory) as any)
+      if (draft.roleCategoryOther) setValue('roleCategoryOther', String(draft.roleCategoryOther))
+      if (Array.isArray(draft.etrmPackages)) setValue('etrmPackages', draft.etrmPackages as string[])
+      if (Array.isArray(draft.commodityTags)) setValue('commodityTags', draft.commodityTags as string[])
+      if (draft.budgetMin != null) {
+        const k = Math.round(Number(draft.budgetMin) / 1000)
+        if (k >= 70 && k <= 300) setBudgetMinK(k), setValue('budgetMin', String(Number(draft.budgetMin)))
+      }
+      if (draft.budgetMax != null) {
+        const k = Math.round(Number(draft.budgetMax) / 1000)
+        if (k >= 70 && k <= 300) setBudgetMaxK(k), setValue('budgetMax', String(Number(draft.budgetMax)))
+      }
+      if (draft.budgetCurrency) setValue('budgetCurrency', String(draft.budgetCurrency) as any)
+      if (typeof draft.budgetIsEstimate === 'boolean') setValue('budgetIsEstimate', draft.budgetIsEstimate)
+      if (draft.visaSponsorshipProvided !== undefined && draft.visaSponsorshipProvided !== null) setValue('visaSponsorshipProvided', Boolean(draft.visaSponsorshipProvided))
+      if (draft.jdText) setValue('jdText', String(draft.jdText))
+      if (draft.recruiterEmailTo) setValue('recruiterEmailTo', String(draft.recruiterEmailTo))
+    } catch {
+      // ignore invalid draft
+    }
+  }, [setValue])
+
+  const saveDraft = useCallback((data: Record<string, unknown>) => {
+    try {
+      const payload: Record<string, unknown> = {
+        title: data.title,
+        companyName: data.companyName,
+        locationText: data.locationText,
+        remotePolicy: data.remotePolicy,
+        contractType: data.contractType,
+        experienceRange: data.experienceRange,
+        roleCategory: data.roleCategory,
+        roleCategoryOther: data.roleCategoryOther,
+        etrmPackages: data.etrmPackages,
+        commodityTags: data.commodityTags,
+        budgetMin: data.budgetMin != null ? Number(data.budgetMin) : undefined,
+        budgetMax: data.budgetMax != null ? Number(data.budgetMax) : undefined,
+        budgetCurrency: data.budgetCurrency,
+        budgetIsEstimate: data.budgetIsEstimate,
+        visaSponsorshipProvided: data.visaSponsorshipProvided,
+        jdText: data.jdText,
+        recruiterEmailTo: data.recruiterEmailTo,
+      }
+      if (typeof window !== 'undefined') sessionStorage.setItem(POST_JOB_DRAFT_KEY, JSON.stringify(payload))
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const {
     fields: gateRuleFields,
     append: appendGateRule,
@@ -171,6 +239,7 @@ export default function PostJobPage() {
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true)
+    saveDraft(data)
     try {
       // Convert experience range to seniority for backward compatibility
       let seniority = 'MID'
@@ -300,31 +369,32 @@ export default function PostJobPage() {
           result = JSON.parse(text)
         } catch {
           console.error('JSON parse error, response:', text?.slice(0, 500))
-          alert('Failed to create job: The server returned an invalid response. Please try again or use a different browser.')
+          showToast('error', 'The server returned an invalid response. Your draft was saved—please try again.')
           return
         }
       } else {
         console.error('Non-JSON response:', text?.slice(0, 500))
-        alert(response.ok ? 'Invalid server response. Please try again.' : `Server error (${response.status}). Please try again.`)
+        showToast('error', response.ok ? 'Invalid server response. Please try again.' : `Server error (${response.status}). Your draft was saved.`)
         return
       }
 
       if (result.success && result.job) {
+        try { if (typeof window !== 'undefined') sessionStorage.removeItem(POST_JOB_DRAFT_KEY) } catch { /* ignore */ }
+        showToast('success', 'Job posted successfully!')
         router.push(`/post-job/success?slug=${result.job.slug}&expiresAt=${result.job.expiresAt}`)
       } else {
-        // Show detailed error message
         let errorMsg = result.error || 'Unknown error'
         if (result.details && Array.isArray(result.details)) {
-          const validationErrors = result.details.map((d: any) => `${d.path.join('.')}: ${d.message}`).join('\n')
-          errorMsg = `Validation errors:\n${validationErrors}`
+          const validationErrors = result.details.map((d: any) => `${d.path.join('.')}: ${d.message}`).join('; ')
+          errorMsg = `${errorMsg}. ${validationErrors}`
         }
-        alert('Failed to create job: ' + errorMsg)
+        showToast('error', 'Failed to create job: ' + errorMsg)
         console.error('Job creation error:', result)
       }
     } catch (error) {
       console.error('Error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Network error. Please check your connection and try again.'
-      alert('Failed to create job: ' + errorMessage)
+      showToast('error', 'Failed to create job: ' + errorMessage + ' Your draft was saved.')
     } finally {
       setIsSubmitting(false)
     }
@@ -353,9 +423,11 @@ export default function PostJobPage() {
                 </label>
                 <input
                   {...register('title', { required: true })}
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                   placeholder="e.g., Senior Endur Developer"
                   required
+                  aria-label="Job title"
+                  aria-required="true"
                 />
               </div>
               <div>
@@ -480,7 +552,8 @@ export default function PostJobPage() {
                             )
                           }
                         }}
-                        className="w-6 h-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
+                        className="w-6 h-6 min-w-[24px] min-h-[24px] sm:w-5 sm:h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0 touch-manipulation"
+                        aria-label={`Select ${pkg}`}
                       />
                       <span className="text-gray-700 group-hover:text-blue-600 transition-colors text-base">
                         {pkg}
@@ -529,12 +602,13 @@ export default function PostJobPage() {
                   </span>
                 </div>
                 {/* Numeric inputs — easier on mobile than slider */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label htmlFor="budget-min-input" className="block text-xs font-medium text-gray-500 mb-1">Min (k)</label>
                     <input
                       id="budget-min-input"
                       type="number"
+                      inputMode="numeric"
                       min={70}
                       max={300}
                       step={10}
@@ -548,7 +622,8 @@ export default function PostJobPage() {
                           setValue('budgetMax', (Math.max(newMin, budgetMaxK) * 1000).toString())
                         }
                       }}
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                      aria-label="Minimum budget in thousands"
                     />
                   </div>
                   <div>
@@ -556,6 +631,7 @@ export default function PostJobPage() {
                     <input
                       id="budget-max-input"
                       type="number"
+                      inputMode="numeric"
                       min={70}
                       max={300}
                       step={10}
@@ -569,7 +645,8 @@ export default function PostJobPage() {
                           setValue('budgetMin', (Math.min(budgetMinK, newMax) * 1000).toString())
                         }
                       }}
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                      aria-label="Maximum budget in thousands"
                     />
                   </div>
                 </div>
@@ -735,7 +812,8 @@ export default function PostJobPage() {
             />
           </section>
 
-          {/* Minimum Requirements */}
+          {/* Minimum Requirements — temporarily hidden until server handling is stable */}
+          {REQUIREMENTS_SECTION_ENABLED ? (
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Minimum Requirements</h2>
@@ -972,6 +1050,14 @@ export default function PostJobPage() {
               )}
             </div>
           </section>
+          ) : (
+          <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100" aria-hidden="true">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Minimum Requirements</h2>
+            <p className="text-sm text-gray-500">
+              This section is temporarily unavailable. You can still post jobs without gate requirements.
+            </p>
+          </section>
+          )}
 
           {/* Your Email */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
@@ -1011,7 +1097,8 @@ export default function PostJobPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+            className="w-full min-h-[48px] px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 font-semibold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 touch-manipulation"
+            aria-busy={isSubmitting}
           >
             {isSubmitting ? 'Creating Job...' : 'Create Job Posting'}
           </button>

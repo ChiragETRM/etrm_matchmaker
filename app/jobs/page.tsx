@@ -388,6 +388,7 @@ function JobsContent() {
     }
   }, [slugFromUrl, selectedJob, fetchJobDetail])
 
+  // Only update URL and detail on explicit user click (not on scroll) for routing stability
   const selectJob = (job: JobListItem) => {
     setSelectedJob(null)
     fetchJobDetail(job.slug)
