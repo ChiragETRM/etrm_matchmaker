@@ -42,19 +42,20 @@ function SignInContent() {
   const termsScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (error && !isClearingCookies) {
+    // Only clear cookies on specific auth errors that require a fresh start
+    if (error && !isClearingCookies && ['Configuration', 'AccessDenied', 'PKCEError', 'StateError'].includes(error)) {
       clearAuthCookies()
       setIsClearingCookies(true)
-      if (['Configuration', 'AccessDenied', 'PKCEError', 'StateError'].includes(error)) {
-        signOut({ redirect: false }).then(() => {
-          setTimeout(() => {
-            clearAuthCookies()
-            window.location.href = '/auth/signin'
-          }, 100)
-        })
-      }
+      signOut({ redirect: false }).then(() => {
+        setTimeout(() => {
+          const signInUrl = new URL('/auth/signin', window.location.href)
+          signInUrl.searchParams.set('error', error)
+          if (callbackUrl && callbackUrl !== '/dashboard') signInUrl.searchParams.set('callbackUrl', callbackUrl)
+          window.location.href = signInUrl.toString()
+        }, 100)
+      })
     }
-  }, [error, isClearingCookies])
+  }, [error, isClearingCookies, callbackUrl])
 
   useEffect(() => {
     if (status === 'authenticated' && session) {
@@ -79,9 +80,10 @@ function SignInContent() {
       } catch {
         if (!decodedUrl.startsWith('/')) decodedUrl = '/' + decodedUrl
       }
-      savePolicyAgreement().then(() => router.push(decodedUrl))
+      // Full page redirect so target page loads with session (avoids redirect loop from stale SessionProvider)
+      savePolicyAgreement().then(() => { window.location.href = decodedUrl })
     }
-  }, [status, session, callbackUrl, router, searchParams])
+  }, [status, session, callbackUrl, searchParams])
 
   const handleOtpRequest = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,8 +159,14 @@ function SignInContent() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center gap-2 mb-4" aria-label="Progress">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white text-sm font-medium">1</span>
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-medium">2</span>
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-medium">3</span>
+        </div>
         <h1 className="text-center text-3xl font-bold text-gray-900">Hand Picked ETRM/CTRM Jobs</h1>
         <h2 className="mt-6 text-center text-xl text-gray-600">Sign in to your account</h2>
+        <p className="mt-2 text-center text-sm text-gray-500">Step 1: Enter your email to receive a verification code</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

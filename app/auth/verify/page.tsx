@@ -62,7 +62,10 @@ function VerifyContent() {
       sessionStorage.removeItem('otpName')
       if (data.needsPasswordSetup) {
         sessionStorage.setItem('onboardingToken', data.signInToken)
-        window.location.href = `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`
+        const params = new URLSearchParams()
+        params.set('callbackUrl', callbackUrl)
+        params.set('email', eTrim)
+        window.location.href = `/auth/onboarding?${params.toString()}`
         return
       }
       await completeSignInWithFormPost(data.signInToken, callbackUrl)
@@ -138,11 +141,18 @@ function VerifyContent() {
     )
   }
 
+  const signInUrl = `/auth/signin${callbackUrl && callbackUrl !== '/dashboard' ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center gap-2 mb-4" aria-label="Progress">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-medium">1</span>
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white text-sm font-medium">2</span>
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-medium">3</span>
+        </div>
         <h1 className="text-center text-2xl font-bold text-gray-900">Enter verification code</h1>
-        <p className="mt-2 text-center text-sm text-gray-600">If an account exists for this email, a code has been sent. Enter the 6-digit code below.</p>
+        <p className="mt-2 text-center text-sm text-gray-600">Step 2: Enter the 6-digit code sent to your email.</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -150,12 +160,20 @@ function VerifyContent() {
           <form onSubmit={handleVerify} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Email</label>
-              <input
-                type="email"
-                value={email}
-                readOnly
-                className="mt-1 block w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
-              />
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  readOnly
+                  className="block w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
+                />
+                <Link
+                  href={signInUrl}
+                  className="shrink-0 text-sm text-indigo-600 hover:text-indigo-500 whitespace-nowrap"
+                >
+                  Change email
+                </Link>
+              </div>
             </div>
             <div>
               <label htmlFor="otp" className="block text-sm font-medium text-gray-700">Verification code</label>
@@ -193,7 +211,7 @@ function VerifyContent() {
           </div>
 
           <p className="mt-6 text-center text-sm text-gray-500">
-            <Link href="/auth/signin" className="text-indigo-600 hover:text-indigo-500">Back to sign in</Link>
+            <Link href={signInUrl} className="text-indigo-600 hover:text-indigo-500">Back to sign in</Link>
           </p>
         </div>
       </div>

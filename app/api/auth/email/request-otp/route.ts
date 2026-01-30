@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 import { generateOtp, hashOtp, getOtpExpiry } from '@/lib/otp'
@@ -76,7 +77,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    return NextResponse.json({ success: true })
+    const otpRequestId = randomBytes(16).toString('hex')
+    return NextResponse.json({
+      success: true,
+      otp_request_id: otpRequestId,
+      expires_at: expiresAt.toISOString(),
+    })
   } catch (err) {
     console.error('[request-otp]', err)
     return NextResponse.json(

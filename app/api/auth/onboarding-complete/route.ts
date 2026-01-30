@@ -73,6 +73,10 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[onboarding-complete] user created/updated', user.id, 'token left for credentials callback')
+    }
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[onboarding-complete]', err)

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 
 const ONBOARDING_TOKEN_KEY = 'onboardingToken'
 
@@ -11,6 +12,7 @@ function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const emailFromUrl = searchParams.get('email') || ''
   const [onboardingToken, setOnboardingToken] = useState<string | null>(null)
   const [storageChecked, setStorageChecked] = useState(false)
   const [name, setName] = useState('')
@@ -147,11 +149,21 @@ function OnboardingContent() {
     )
   }
 
+  const signInUrl = `/auth/signin${callbackUrl !== '/dashboard' ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-2xl font-bold text-gray-900">Set your password</h1>
-        <p className="mt-2 text-center text-sm text-gray-600">Choose a password for your account</p>
+        <div className="flex justify-center gap-2 mb-4" aria-label="Progress">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-medium">1</span>
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-medium">2</span>
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white text-sm font-medium">3</span>
+        </div>
+        <h1 className="text-center text-2xl font-bold text-gray-900">Complete your profile</h1>
+        <p className="mt-2 text-center text-sm text-gray-600">Step 3: Set your name and password</p>
+        {emailFromUrl && (
+          <p className="mt-1 text-center text-sm text-gray-500">Account: {emailFromUrl}</p>
+        )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -181,7 +193,7 @@ function OnboardingContent() {
                 minLength={10}
                 className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
               />
-              <p className="mt-1 text-xs text-gray-500">Min 10 chars, 1 uppercase, 1 lowercase, 1 number</p>
+              <p className="mt-1 text-xs text-gray-500">At least 10 characters, one uppercase, one lowercase, one number</p>
             </div>
             <div>
               <label htmlFor="confirm" className="block text-sm font-medium text-gray-700">Confirm password</label>
@@ -195,7 +207,7 @@ function OnboardingContent() {
                 className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
             <button
               type="submit"
               disabled={loading}
@@ -204,6 +216,9 @@ function OnboardingContent() {
               {loading ? 'Setting up...' : 'Continue'}
             </button>
           </form>
+          <p className="mt-4 text-center text-sm text-gray-500">
+            <Link href={signInUrl} className="text-indigo-600 hover:text-indigo-500">Use a different email</Link>
+          </p>
         </div>
       </div>
     </div>

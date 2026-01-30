@@ -139,8 +139,17 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    const status = needsPasswordSetup
+      ? 'NEW_USER_VERIFIED_NEEDS_PROFILE'
+      : 'EXISTING_USER_AUTHENTICATED'
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[verify-otp]', { email: emailStr, status, needsPasswordSetup })
+    }
+
     return NextResponse.json({
       success: true,
+      status,
       needsPasswordSetup,
       signInToken: token,
     })

@@ -17,9 +17,11 @@ function LoginContent() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push(callbackUrl)
+      // Full page redirect so the next page loads with session cookie (avoids redirect loop)
+      const url = callbackUrl.startsWith('/') ? callbackUrl : `/${callbackUrl}`
+      window.location.href = url
     }
-  }, [status, callbackUrl, router])
+  }, [status, callbackUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,9 +41,12 @@ function LoginContent() {
       })
       if (result?.error) {
         setError('Invalid email or password.')
+        setLoading(false)
         return
       }
-      router.push(callbackUrl)
+      // Full page redirect so dashboard sees session (SessionProvider cache would otherwise show unauthenticated and redirect back to signin)
+      const url = callbackUrl.startsWith('/') ? callbackUrl : `/${callbackUrl}`
+      window.location.href = url
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -103,7 +108,12 @@ function LoginContent() {
             </button>
           </form>
           <p className="mt-4 text-center text-sm text-gray-500">
-            <Link href="/auth/signin" className="text-indigo-600 hover:text-indigo-500">Use verification code instead</Link>
+            <Link
+              href={callbackUrl !== '/dashboard' ? `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/auth/signin'}
+              className="text-indigo-600 hover:text-indigo-500"
+            >
+              Use verification code instead
+            </Link>
           </p>
         </div>
       </div>

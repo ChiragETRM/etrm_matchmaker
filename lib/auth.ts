@@ -169,9 +169,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Ensure baseUrl is properly set
       const effectiveBaseUrl = baseUrl || authUrl
       
-      // Handle relative URLs
+      // Handle relative URLs (e.g. /dashboard or /dashboard/candidate from callbackUrl form param)
       if (url.startsWith('/')) {
-        return `${effectiveBaseUrl}${url}`
+        const target = `${effectiveBaseUrl}${url}`
+        if (!isProduction) {
+          console.log('[NextAuth redirect] relative url ->', target, 'baseUrl:', effectiveBaseUrl)
+        }
+        return target
       }
       
       // Handle absolute URLs from same origin
@@ -179,13 +183,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const urlObj = new URL(url)
         const baseUrlObj = new URL(effectiveBaseUrl)
         if (urlObj.origin === baseUrlObj.origin) {
+          if (!isProduction) console.log('[NextAuth redirect] same-origin ->', url)
           return url
         }
       } catch {
         // Invalid URL, fall through to default
       }
       
-      // Default to baseUrl
+      if (!isProduction) console.log('[NextAuth redirect] default baseUrl ->', effectiveBaseUrl)
       return effectiveBaseUrl
     },
     async signIn({ user, account, profile }) {
