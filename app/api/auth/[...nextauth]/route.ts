@@ -98,20 +98,38 @@ async function handleRequest(
     return response
   } catch (error) {
     console.error('[NextAuth] Handler error:', error)
-    
-    // If it's a configuration error, redirect to sign-in with error
+
     if (error instanceof Error) {
       const errorMessage = error.message.toLowerCase()
+
+      // Only treat as Configuration when AUTH_SECRET/NEXTAUTH_SECRET is the problem.
+      // Do NOT match broad "missing"/"required" — that incorrectly catches provider
+      // errors like "clientId is required" and shows "Configuration" for Google.
       if (
-        errorMessage.includes('configuration') ||
         errorMessage.includes('auth_secret') ||
-        errorMessage.includes('google_client') ||
-        errorMessage.includes('missing') ||
-        errorMessage.includes('required')
+        errorMessage.includes('nextauth_secret')
       ) {
         const url = new URL('/auth/signin', req.url)
         url.searchParams.set('error', 'Configuration')
         url.searchParams.set('details', encodeURIComponent(error.message))
+        return NextResponse.redirect(url)
+      }
+
+      // Google provider env/setup errors — show SignInError with clear message, not Configuration
+      if (
+        errorMessage.includes('clientid') ||
+        errorMessage.includes('client_secret') ||
+        errorMessage.includes('google_client') ||
+        (errorMessage.includes('google') && (errorMessage.includes('missing') || errorMessage.includes('required')))
+      ) {
+        const url = new URL('/auth/signin', req.url)
+        url.searchParams.set('error', 'SignInError')
+        url.searchParams.set(
+          'details',
+          encodeURIComponent(
+            'Google sign-in is not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your deployment environment (e.g. Vercel Project Settings > Environment Variables for Production).'
+          )
+        )
         return NextResponse.redirect(url)
       }
       
