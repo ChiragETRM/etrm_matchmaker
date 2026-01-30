@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, validatePassword } from '@/lib/password'
 
+const SESSION_MAX_AGE_SEC = 30 * 24 * 60 * 60 // 30 days, match NextAuth session.maxAge
+const isProduction = process.env.NODE_ENV === 'production'
+const SESSION_COOKIE_NAME = `${isProduction ? '__Secure-' : ''}next-auth.session-token`
+
 /**
- * Complete onboarding with token from OTP verify (no session required).
- * Validates OtpVerificationToken, updates user name and password.
- * Client then uses the same token with NextAuth callback to create session.
+ * Complete onboarding with token from OTP verify.
+ * Validates OtpVerificationToken, updates user name and password, then creates
+ * a session and sets the session cookie so the user is authenticated immediately.
+ * Client redirects to redirectUrl; no form POST to credentials callback.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { token, name: nameFromBody, password } = body as {
+    const { token, name: nameFromBody, password, callbackUrl: callbackUrlFromBody } = body as {
       token?: string
       name?: string
       password?: string
+      callbackUrl?: string
     }
 
     const tokenStr = typeof token === 'string' ? token.trim() : ''
@@ -38,6 +45,11 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    const rawRedirect = typeof callbackUrlFromBody === 'string' ? callbackUrlFromBody.trim() : ''
+    const redirectUrl = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')
+      ? rawRedirect
+      : '/dashboard'
 
     const record = await prisma.otpVerificationToken.findUnique({
       where: { token: tokenStr },
@@ -73,11 +85,34 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // One-time token consumed: delete so it cannot be reused
+    await prisma.otpVerificationToken.delete({ where: { id: record.id } }).catch(() => {})
+
+    // Create session and set cookie (same as verify-otp for existing users).
+    // This avoids the credentials callback form POST which was redirecting to signin.
+    const sessionToken = randomUUID()
+    const expires = new Date(Date.now() + SESSION_MAX_AGE_SEC * 1000)
+    await prisma.session.create({
+      data: {
+        sessionToken,
+        userId: user.id,
+        expires,
+      },
+    })
+
     if (process.env.NODE_ENV !== 'production') {
-      console.log('[onboarding-complete] user created/updated', user.id, 'token left for credentials callback')
+      console.log('[onboarding-complete] session created', { userId: user.id, redirectUrl })
     }
 
-    return NextResponse.json({ success: true })
+    const res = NextResponse.json({ success: true, redirectUrl })
+    res.cookies.set(SESSION_COOKIE_NAME, sessionToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      secure: isProduction,
+      expires,
+    })
+    return res
   } catch (err) {
     console.error('[onboarding-complete]', err)
     return NextResponse.json(

@@ -57,34 +57,6 @@ function OnboardingContent() {
     return ''
   }
 
-  const handleSubmitWithToken = async () => {
-    const { getCsrfToken } = await import('next-auth/react')
-    const csrfToken = await getCsrfToken()
-    if (!csrfToken) {
-      setError('Session error. Please try again.')
-      return
-    }
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = '/api/auth/callback/credentials'
-    form.style.display = 'none'
-    const fields: [string, string][] = [
-      ['csrfToken', csrfToken],
-      ['token', onboardingToken!],
-      ['callbackUrl', callbackUrl],
-    ]
-    fields.forEach(([name, value]) => {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = name
-      input.value = value
-      form.appendChild(input)
-    })
-    document.body.appendChild(form)
-    sessionStorage.removeItem(ONBOARDING_TOKEN_KEY)
-    form.submit()
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const err = validate()
@@ -103,6 +75,7 @@ function OnboardingContent() {
             token: onboardingToken,
             name: name.trim(),
             password,
+            callbackUrl,
           }),
         })
         const data = await res.json()
@@ -111,7 +84,9 @@ function OnboardingContent() {
           setLoading(false)
           return
         }
-        await handleSubmitWithToken()
+        // Session created and cookie set by onboarding-complete API. Just redirect.
+        sessionStorage.removeItem(ONBOARDING_TOKEN_KEY)
+        window.location.href = data.redirectUrl || callbackUrl
         return
       }
       const res = await fetch('/api/auth/password/set', {

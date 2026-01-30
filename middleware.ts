@@ -17,9 +17,16 @@ export function middleware(req: NextRequest) {
 
   // Protect dashboard routes: redirect unauthenticated to sign-in with callbackUrl
   if (pathname.startsWith('/dashboard')) {
-    if (!hasSessionCookie(req)) {
+    const hasSession = hasSessionCookie(req)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[middleware]', { pathname, hasSession })
+    }
+    if (!hasSession) {
       const signInUrl = new URL('/auth/signin', req.url)
       signInUrl.searchParams.set('callbackUrl', pathname)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[middleware] redirect to signin', signInUrl.toString())
+      }
       return NextResponse.redirect(signInUrl)
     }
   }

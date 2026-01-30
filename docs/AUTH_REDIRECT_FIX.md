@@ -52,16 +52,14 @@
      │            /auth/onboarding
      │            [name + password]
      │                 │
-     │            POST onboarding-complete
-     │            → form POST callback/credentials
-     │            (token + callbackUrl)
+     │            POST onboarding-complete (token, name, password, callbackUrl)
+     │            → Server: update user, create Session, Set-Cookie, return { redirectUrl }
+     │                 │
+     │            Client: window.location.href = redirectUrl
      │                 │
      ▼                 ▼
-  form POST callback/credentials
-  (token + callbackUrl)
-     │
-     ▼
-  Server: set session cookie, 302 → callbackUrl
+  [Session set by verify-otp   [Session set by onboarding-complete
+   or callback/credentials]    in API response]
      │
      ▼
   Browser: full load of callbackUrl (e.g. /dashboard)
@@ -69,6 +67,16 @@
 ```
 
 **Protected routes:** Visiting `/dashboard` or `/dashboard/*` without a session cookie → middleware redirects to `/auth/signin?callbackUrl=<current path>`. `callbackUrl` is preserved through sign-in → verify → onboarding → final redirect.
+
+## New-user onboarding loop (fixed)
+
+**Symptom:** New user: OTP → onboard (name + password) → redirected back to /auth/signin.
+
+**Cause:** After onboarding-complete API success, the client did a **form POST** to `/api/auth/callback/credentials` with the onboarding token. NextAuth’s credentials `authorize()` was failing (or redirect was going to signin), so the user landed on signin. Same class of failure as existing-user OTP (credentials callback unreliable for this flow).
+
+**Fix:** onboarding-complete API now **creates the session** and sets the session cookie in the response (same pattern as verify-otp for existing users). It accepts `callbackUrl`, returns `redirectUrl`, and the client does `window.location.href = data.redirectUrl`. No form POST, no credentials callback. Token is deleted after use (one-time).
+
+**Files:** `app/api/auth/onboarding-complete/route.ts` (create Session, set cookie, return redirectUrl); `app/auth/onboarding/page.tsx` (pass callbackUrl, redirect to data.redirectUrl, remove handleSubmitWithToken).
 
 ## Manual QA checklist
 
@@ -82,12 +90,14 @@
 | 6 | Sign out then dashboard | 1) Sign in, go to dashboard. 2) Sign out. 3) Visit /dashboard. | Redirect to /auth/signin?callbackUrl=/dashboard. |
 | 7 | Change email / back links | On /auth/verify and /auth/onboarding, use “Change email” / “Back to sign in” / “Use a different email”. | Links include callbackUrl where applicable; flow can be restarted without losing intent. |
 | 8 | Resend OTP | On /auth/verify, click “Resend code”. | Cooldown (e.g. 60s) applies; code can be resent; verify still works. |
+| 9 | Signin while logged in | While authenticated, visit /auth/signin. | Redirected to /dashboard (or callbackUrl). No sign-in form shown. |
+| 10 | New user: refresh after onboard | After OTP → onboard → /dashboard, refresh the page. | User stays on /dashboard, still authenticated. |
 
 ## Technical checklist (already implemented)
 
 - Session cookie: no custom domain (browser default); `secure` in production; `sameSite: 'lax'`; `path: '/'`.
 - After session creation, client uses full-page redirect (`window.location.href`) so the next load has the cookie and a fresh session.
-- `callbackUrl` is passed through: signin → verify (query); verify → onboarding (query); onboarding form POST to callback/credentials; login form/redirect.
+- `callbackUrl` is passed through: signin → verify (query); verify → onboarding (query); onboarding-complete API returns redirectUrl; login form/redirect.
 - Middleware protects `/dashboard` and `/dashboard/*`, redirects to `/auth/signin?callbackUrl=<path>` when session cookie is absent.
 - OTP: request-otp returns `otp_request_id` and `expires_at`; verify-otp returns `status`: `EXISTING_USER_AUTHENTICATED` or `NEW_USER_VERIFIED_NEEDS_PROFILE`.
 - UX: progress steps (1–2–3) on signin, verify, onboarding; “Change email” / “Back to sign in”; password rules on onboarding; loading and error states; resend OTP cooldown on verify.
