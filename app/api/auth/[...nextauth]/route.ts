@@ -1,31 +1,18 @@
 import { handlers } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Validate environment variables at runtime.
-// Only require Google credentials for routes that actually use Google OAuth.
-function validateAuthConfig(req: NextRequest): { valid: boolean; error?: string } {
-  const missing: string[] = []
-  const path = new URL(req.url).pathname
-  const isGoogleOAuth =
-    path.includes('/signin/google') ||
-    path.includes('/callback/google')
-
+// Validate only AUTH_SECRET at runtime. Do not require Google env here:
+// they are read in lib/auth.ts; if missing, Google provider is simply disabled.
+// Requiring them here caused "Configuration" errors when vars were set in
+// Vercel but not visible in the serverless runtime (e.g. wrong environment).
+function validateAuthConfig(_req: NextRequest): { valid: boolean; error?: string } {
   if (!process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
-    missing.push('AUTH_SECRET or NEXTAUTH_SECRET')
-  }
-  if (isGoogleOAuth) {
-    if (!process.env.GOOGLE_CLIENT_ID) missing.push('GOOGLE_CLIENT_ID')
-    if (!process.env.GOOGLE_CLIENT_SECRET) missing.push('GOOGLE_CLIENT_SECRET')
-  }
-
-  if (missing.length > 0) {
-    console.error('[NextAuth] Missing environment variables:', missing.join(', '))
+    console.error('[NextAuth] Missing AUTH_SECRET or NEXTAUTH_SECRET')
     return {
       valid: false,
-      error: `Missing required environment variables: ${missing.join(', ')}`,
+      error: 'AUTH_SECRET or NEXTAUTH_SECRET is required',
     }
   }
-
   const authUrl =
     process.env.AUTH_URL ||
     process.env.NEXTAUTH_URL ||
@@ -34,7 +21,6 @@ function validateAuthConfig(req: NextRequest): { valid: boolean; error?: string 
   if (!authUrl) {
     console.warn('[NextAuth] AUTH_URL not set, using request origin')
   }
-
   return { valid: true }
 }
 
