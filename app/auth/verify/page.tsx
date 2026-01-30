@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -17,11 +17,13 @@ function VerifyContent() {
   const [error, setError] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
   const [resendLoading, setResendLoading] = useState(false)
+  const verifiedSuccessRef = useRef(false)
 
-  // Sync email from URL or sessionStorage; only redirect to signin when there is
-  // no email from any source (avoids redirecting after OTP success when we've
-  // cleared storage but form POST / redirect hasn't happened yet)
+  // Sync email from URL or sessionStorage; redirect to signin only when no email
+  // from any source. Never redirect after a successful verify (we're about to
+  // POST or redirect).
   useEffect(() => {
+    if (verifiedSuccessRef.current) return
     const stored = sessionStorage.getItem('otpEmail')
     if (stored) {
       setEmail(stored)
@@ -67,13 +69,14 @@ function VerifyContent() {
         setLoading(false)
         return
       }
-      sessionStorage.removeItem('otpEmail')
-      sessionStorage.removeItem('otpName')
+      verifiedSuccessRef.current = true
       if (data.needsPasswordSetup) {
         sessionStorage.setItem('onboardingToken', data.signInToken)
         const params = new URLSearchParams()
         params.set('callbackUrl', callbackUrl)
         params.set('email', eTrim)
+        sessionStorage.removeItem('otpEmail')
+        sessionStorage.removeItem('otpName')
         window.location.href = `/auth/onboarding?${params.toString()}`
         return
       }
@@ -114,6 +117,8 @@ function VerifyContent() {
       form.appendChild(input)
     })
     document.body.appendChild(form)
+    sessionStorage.removeItem('otpEmail')
+    sessionStorage.removeItem('otpName')
     form.submit()
   }
 
