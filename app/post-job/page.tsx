@@ -44,6 +44,22 @@ const COUNTRIES = [
 
 const POST_JOB_DRAFT_KEY = 'postJobDraft'
 
+const BUDGET_MIN_VALUE = 1
+const BUDGET_MAX_VALUE = 1_000_000
+
+/** Format integer with American comma convention (e.g. 1,000,000) */
+function formatBudgetAmount(n: number): string {
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 })
+}
+
+/** Parse user input (digits and commas) to integer, clamped to [min, max] */
+function parseBudgetInput(raw: string, min: number, max: number): number {
+  const digits = raw.replace(/\D/g, '')
+  const val = digits === '' ? min : parseInt(digits, 10)
+  if (Number.isNaN(val)) return min
+  return Math.max(min, Math.min(max, val))
+}
+
 const REQUIREMENTS_SECTION_ENABLED = true
 
 const BOILERPLATE_JD = {
@@ -126,8 +142,6 @@ export default function PostJobPage() {
   const { data: session, status } = useSession()
   const { showToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [budgetMinK, setBudgetMinK] = useState(70)
-  const [budgetMaxK, setBudgetMaxK] = useState(185)
 
   // No auth required - allow posting jobs without signing in
 
@@ -180,17 +194,15 @@ export default function PostJobPage() {
       if (Array.isArray(draft.etrmPackages)) setValue('etrmPackages', draft.etrmPackages as string[])
       if (Array.isArray(draft.commodityTags)) setValue('commodityTags', draft.commodityTags as string[])
       if (draft.budgetMin != null) {
-        const k = Math.round(Number(draft.budgetMin) / 1000)
-        if (k >= 70 && k <= 300) {
-          setBudgetMinK(k)
-          setValue('budgetMin', String(Number(draft.budgetMin)))
+        const n = Math.round(Number(draft.budgetMin))
+        if (n >= BUDGET_MIN_VALUE && n <= BUDGET_MAX_VALUE) {
+          setValue('budgetMin', String(n))
         }
       }
       if (draft.budgetMax != null) {
-        const k = Math.round(Number(draft.budgetMax) / 1000)
-        if (k >= 70 && k <= 300) {
-          setBudgetMaxK(k)
-          setValue('budgetMax', String(Number(draft.budgetMax)))
+        const n = Math.round(Number(draft.budgetMax))
+        if (n >= BUDGET_MIN_VALUE && n <= BUDGET_MAX_VALUE) {
+          setValue('budgetMax', String(n))
         }
       }
       if (draft.budgetCurrency) setValue('budgetCurrency', String(draft.budgetCurrency) as any)
@@ -620,51 +632,41 @@ export default function PostJobPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="budget-min-input" className="block text-sm font-semibold text-gray-700 mb-2">Amount (min) *</label>
-                    <input
-                      id="budget-min-input"
-                      type="number"
-                      inputMode="numeric"
-                      min={70}
-                      max={300}
-                      step={10}
-                      value={budgetMinK}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10)
-                        if (!Number.isNaN(val)) {
-                          const newMin = Math.max(70, Math.min(val, budgetMaxK))
-                          setBudgetMinK(newMin)
-                          setValue('budgetMin', (newMin * 1000).toString())
-                          setValue('budgetMax', (Math.max(newMin, budgetMaxK) * 1000).toString())
-                        }
-                      }}
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                      aria-label="Minimum budget in thousands"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="budget-max-input" className="block text-xs font-medium text-gray-500 mb-1">Max (k)</label>
-                    <input
-                      id="budget-max-input"
-                      type="number"
-                      inputMode="numeric"
-                      min={70}
-                      max={300}
-                      step={10}
-                      value={budgetMaxK}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10)
-                        if (!Number.isNaN(val)) {
-                          const newMax = Math.min(300, Math.max(val, budgetMinK))
-                          setBudgetMaxK(newMax)
-                          setValue('budgetMax', (newMax * 1000).toString())
-                          setValue('budgetMin', (Math.min(budgetMinK, newMax) * 1000).toString())
-                        }
-                      }}
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                      aria-label="Maximum budget in thousands"
-                    />
-                  </div>
+                  <input
+                    id="budget-min-input"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatBudgetAmount(Math.max(BUDGET_MIN_VALUE, Math.min(BUDGET_MAX_VALUE, Number(watch('budgetMin')) || BUDGET_MIN_VALUE)))}
+                    onChange={(e) => {
+                      const budgetMaxNum = Number(watch('budgetMax')) || BUDGET_MAX_VALUE
+                      const newMin = parseBudgetInput(e.target.value, BUDGET_MIN_VALUE, BUDGET_MAX_VALUE)
+                      const finalMin = Math.min(newMin, budgetMaxNum)
+                      setValue('budgetMin', String(finalMin))
+                      if (newMin > budgetMaxNum) setValue('budgetMax', String(newMin))
+                    }}
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                    aria-label="Minimum budget amount (1 to 1,000,000)"
+                  />
                 </div>
+                <div>
+                  <label htmlFor="budget-max-input" className="block text-sm font-semibold text-gray-700 mb-2">Max *</label>
+                  <input
+                    id="budget-max-input"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatBudgetAmount(Math.max(BUDGET_MIN_VALUE, Math.min(BUDGET_MAX_VALUE, Number(watch('budgetMax')) || BUDGET_MAX_VALUE)))}
+                    onChange={(e) => {
+                      const budgetMinNum = Number(watch('budgetMin')) || BUDGET_MIN_VALUE
+                      const newMax = parseBudgetInput(e.target.value, BUDGET_MIN_VALUE, BUDGET_MAX_VALUE)
+                      const finalMax = Math.max(newMax, budgetMinNum)
+                      setValue('budgetMax', String(finalMax))
+                      if (newMax < budgetMinNum) setValue('budgetMin', String(newMax))
+                    }}
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                    aria-label="Maximum budget amount (1 to 1,000,000)"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
                   Currency *
