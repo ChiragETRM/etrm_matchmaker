@@ -112,6 +112,8 @@ export default function PostJobPage() {
   const { data: session, status } = useSession()
   const { showToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [budgetMinK, setBudgetMinK] = useState(70)
+  const [budgetMaxK, setBudgetMaxK] = useState(185)
 
   // No auth required - allow posting jobs without signing in
 
@@ -128,8 +130,8 @@ export default function PostJobPage() {
       roleCategoryOther: '',
       etrmPackages: [] as string[],
       commodityTags: [] as string[],
-      budgetMin: '',
-      budgetMax: '',
+      budgetMin: '70000',
+      budgetMax: '185000',
       budgetCurrency: 'USD',
       budgetPeriod: 'YEARLY' as 'DAILY' | 'MONTHLY' | 'YEARLY',
       budgetIsEstimate: false,
@@ -165,11 +167,17 @@ export default function PostJobPage() {
       if (Array.isArray(draft.commodityTags)) setValue('commodityTags', draft.commodityTags as string[])
       if (draft.budgetMin != null) {
         const k = Math.round(Number(draft.budgetMin) / 1000)
-        if (k >= 70 && k <= 300) setBudgetMinK(k), setValue('budgetMin', String(Number(draft.budgetMin)))
+        if (k >= 70 && k <= 300) {
+          setBudgetMinK(k)
+          setValue('budgetMin', String(Number(draft.budgetMin)))
+        }
       }
       if (draft.budgetMax != null) {
         const k = Math.round(Number(draft.budgetMax) / 1000)
-        if (k >= 70 && k <= 300) setBudgetMaxK(k), setValue('budgetMax', String(Number(draft.budgetMax)))
+        if (k >= 70 && k <= 300) {
+          setBudgetMaxK(k)
+          setValue('budgetMax', String(Number(draft.budgetMax)))
+        }
       }
       if (draft.budgetCurrency) setValue('budgetCurrency', String(draft.budgetCurrency) as any)
       if (typeof draft.budgetIsEstimate === 'boolean') setValue('budgetIsEstimate', draft.budgetIsEstimate)
