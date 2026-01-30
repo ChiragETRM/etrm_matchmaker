@@ -124,7 +124,7 @@ export default function PostJobPage() {
       budgetMin: '',
       budgetMax: '',
       budgetCurrency: 'USD',
-      budgetPeriod: 'YEARLY' as const,
+      budgetPeriod: 'YEARLY' as 'DAILY' | 'MONTHLY' | 'YEARLY',
       budgetIsEstimate: false,
       visaSponsorshipProvided: undefined as boolean | undefined,
       jdText: '',
