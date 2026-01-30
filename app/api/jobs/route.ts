@@ -31,7 +31,7 @@ const jobSchema = z.object({
       label: z.string(),
       type: z.enum(['BOOLEAN', 'SINGLE_SELECT', 'MULTI_SELECT', 'NUMBER', 'COUNTRY']),
       required: z.boolean().default(false),
-      options: z.array(z.string()).optional(),
+      options: z.union([z.array(z.string()), z.null()]).optional().transform((v) => (v == null ? undefined : v)),
       orderIndex: z.number().int(),
     })
   ).default([]),
@@ -107,26 +107,43 @@ export async function POST(request: NextRequest) {
               },
               gateRules: {
                 create: data.gateRules.map((r) => {
-                  // Ensure value is JSON-serializable (no undefined, functions, etc.)
-                  let value = r.value
+                  // Ensure value is JSON-serializable (no undefined, functions, symbols, etc.)
+                  let value: unknown = r.value
                   if (value === undefined || value === null) {
                     value = null
                   } else if (typeof value === 'string') {
-                    try {
-                      value = JSON.parse(value)
-                    } catch {
-                      value = value
+                    const trimmed = value.trim()
+                    if (trimmed === '' || trimmed === 'null') {
+                      value = null
+                    } else if (trimmed === 'true') {
+                      value = true
+                    } else if (trimmed === 'false') {
+                      value = false
+                    } else {
+                      try {
+                        if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+                          value = JSON.parse(trimmed)
+                        } else {
+                          const n = Number(trimmed)
+                          value = Number.isNaN(n) ? value : n
+                        }
+                      } catch {
+                        value = value
+                      }
                     }
                   } else if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)) {
-                    value = JSON.parse(JSON.stringify(value))
-                  }
-                  const valueJson = (() => {
                     try {
-                      return JSON.stringify(value)
+                      value = JSON.parse(JSON.stringify(value))
                     } catch {
-                      return 'null'
+                      value = null
                     }
-                  })()
+                  }
+                  let valueJson: string
+                  try {
+                    valueJson = JSON.stringify(value)
+                  } catch {
+                    valueJson = 'null'
+                  }
                   return {
                     questionKey: String(r.questionKey),
                     operator: r.operator,

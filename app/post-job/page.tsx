@@ -21,16 +21,30 @@ interface GateRule {
 const ETRM_PACKAGES = ['Endur', 'Allegro', 'RightAngle', 'Trayport', 'Other']
 const LANGUAGES = ['German', 'French', 'Spanish', 'Korean', 'Italian', 'Chinese']
 const COMMODITIES = ['Power', 'Gas', 'LNG', 'Oil', 'Refined Products', 'Emissions', 'Coal', 'Freight']
+
+// Top ~30 currencies common in ETRM job posts (USD, GBP, EUR first; then INR, AED and others)
+const BUDGET_CURRENCIES = [
+  { code: 'USD', name: 'USD' }, { code: 'GBP', name: 'GBP' }, { code: 'EUR', name: 'EUR' },
+  { code: 'INR', name: 'INR' }, { code: 'AED', name: 'AED' }, { code: 'CHF', name: 'CHF' },
+  { code: 'SGD', name: 'SGD' }, { code: 'AUD', name: 'AUD' }, { code: 'CAD', name: 'CAD' },
+  { code: 'JPY', name: 'JPY' }, { code: 'CNY', name: 'CNY' }, { code: 'HKD', name: 'HKD' },
+  { code: 'SAR', name: 'SAR' }, { code: 'QAR', name: 'QAR' }, { code: 'KWD', name: 'KWD' },
+  { code: 'BHD', name: 'BHD' }, { code: 'OMR', name: 'OMR' }, { code: 'SEK', name: 'SEK' },
+  { code: 'NOK', name: 'NOK' }, { code: 'DKK', name: 'DKK' }, { code: 'PLN', name: 'PLN' },
+  { code: 'CZK', name: 'CZK' }, { code: 'HUF', name: 'HUF' }, { code: 'RON', name: 'RON' },
+  { code: 'BRL', name: 'BRL' }, { code: 'MXN', name: 'MXN' }, { code: 'ZAR', name: 'ZAR' },
+  { code: 'TRY', name: 'TRY' }, { code: 'IDR', name: 'IDR' }, { code: 'MYR', name: 'MYR' },
+  { code: 'THB', name: 'THB' }, { code: 'PHP', name: 'PHP' },
+]
 const COUNTRIES = [
   'United Kingdom', 'United States', 'Germany', 'France', 'Spain', 'Italy',
   'Netherlands', 'Switzerland', 'Singapore', 'Japan', 'Australia', 'Canada',
   'Other'
 ]
 
-// Minimum Requirements section disabled until server-side handling is fully stable
 const POST_JOB_DRAFT_KEY = 'postJobDraft'
 
-const REQUIREMENTS_SECTION_ENABLED = false
+const REQUIREMENTS_SECTION_ENABLED = true
 
 const BOILERPLATE_JD = {
   ETRM_BA: `ETRM Business Analyst (**Endur**)
@@ -180,6 +194,7 @@ export default function PostJobPage() {
         }
       }
       if (draft.budgetCurrency) setValue('budgetCurrency', String(draft.budgetCurrency) as any)
+      if (draft.budgetPeriod) setValue('budgetPeriod', String(draft.budgetPeriod) as 'DAILY' | 'MONTHLY' | 'YEARLY')
       if (typeof draft.budgetIsEstimate === 'boolean') setValue('budgetIsEstimate', draft.budgetIsEstimate)
       if (draft.visaSponsorshipProvided !== undefined && draft.visaSponsorshipProvided !== null) setValue('visaSponsorshipProvided', Boolean(draft.visaSponsorshipProvided))
       if (draft.jdText) setValue('jdText', String(draft.jdText))
@@ -205,6 +220,7 @@ export default function PostJobPage() {
         budgetMin: data.budgetMin != null ? Number(data.budgetMin) : undefined,
         budgetMax: data.budgetMax != null ? Number(data.budgetMax) : undefined,
         budgetCurrency: data.budgetCurrency,
+        budgetPeriod: data.budgetPeriod,
         budgetIsEstimate: data.budgetIsEstimate,
         visaSponsorshipProvided: data.visaSponsorshipProvided,
         jdText: data.jdText,
@@ -252,7 +268,7 @@ export default function PostJobPage() {
       let seniority = 'MID'
       if (data.experienceRange === '0-2') seniority = 'JUNIOR'
       else if (data.experienceRange === '2-5') seniority = 'MID'
-      else if (data.experienceRange === '5+') seniority = 'SENIOR'
+      else if (data.experienceRange === '5-8' || data.experienceRange === '8-12' || data.experienceRange === '12+') seniority = 'SENIOR'
 
       // Process gate rules into questions and gate rules
       const questions: any[] = []
@@ -495,7 +511,9 @@ export default function PostJobPage() {
                 >
                   <option value="0-2">0-2 years</option>
                   <option value="2-5">2-5 years</option>
-                  <option value="5+">5+ years</option>
+                  <option value="5-8">5-8 years</option>
+                  <option value="8-12">8-12 years</option>
+                  <option value="12+">12+ years</option>
                 </select>
               </div>
             </div>
@@ -599,19 +617,9 @@ export default function PostJobPage() {
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Estimate</h2>
             <div className="space-y-5">
-              <div>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Set your budget range
-                  </label>
-                  <span className="text-lg font-bold text-blue-600 tabular-nums">
-                    {budgetMinK}k – {budgetMaxK}k {watch('budgetCurrency')}
-                  </span>
-                </div>
-                {/* Numeric inputs — easier on mobile than slider */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label htmlFor="budget-min-input" className="block text-xs font-medium text-gray-500 mb-1">Min (k)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="budget-min-input" className="block text-sm font-semibold text-gray-700 mb-2">Amount (min) *</label>
                     <input
                       id="budget-min-input"
                       type="number"
@@ -657,73 +665,28 @@ export default function PostJobPage() {
                     />
                   </div>
                 </div>
-                <div className="relative h-10 flex items-center">
-                  {/* Single track: gray bar */}
-                  <div
-                    className="absolute inset-x-0 h-3 rounded-full bg-gray-200"
-                    aria-hidden
-                  />
-                  {/* Filled segment between thumbs */}
-                  <div
-                    className="absolute h-3 rounded-full bg-blue-600 pointer-events-none transition-[left,right] duration-100"
-                    style={{
-                      left: `${((budgetMinK - 70) / 230) * 100}%`,
-                      right: `${100 - ((budgetMaxK - 70) / 230) * 100}%`,
-                    }}
-                    aria-hidden
-                  />
-                  {/* Min thumb — lower z so max thumb is on top when overlapping */}
-                  <input
-                    type="range"
-                    min={70}
-                    max={300}
-                    step={10}
-                    value={budgetMinK}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value)
-                      const newMin = Math.min(value, budgetMaxK)
-                      const newMax = newMin > budgetMaxK ? newMin : budgetMaxK
-                      setBudgetMinK(newMin)
-                      setBudgetMaxK(newMax)
-                      setValue('budgetMin', (newMin * 1000).toString())
-                      setValue('budgetMax', (newMax * 1000).toString())
-                    }}
-                    className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-1"
-                  />
-                  {/* Max thumb — higher z so it’s draggable when thumbs meet */}
-                  <input
-                    type="range"
-                    min={70}
-                    max={300}
-                    step={10}
-                    value={budgetMaxK}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value)
-                      const newMax = Math.max(value, budgetMinK)
-                      setBudgetMaxK(newMax)
-                      setBudgetMinK((prev) => (newMax < prev ? newMax : prev))
-                      setValue('budgetMax', (newMax * 1000).toString())
-                      setValue('budgetMin', (Math.min(budgetMinK, newMax) * 1000).toString())
-                    }}
-                    className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-2"
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-2 px-0.5">
-                  <span>70k</span>
-                  <span>300k</span>
-                </div>
-              </div>
               <div>
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
                   Currency *
                 </label>
                 <select
                   {...register('budgetCurrency', { required: true })}
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
                 >
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
+                  {BUDGET_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">Time period *</label>
+                <select
+                  {...register('budgetPeriod', { required: true })}
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                >
+                  <option value="DAILY">Daily</option>
+                  <option value="MONTHLY">Monthly</option>
+                  <option value="YEARLY">Yearly</option>
                 </select>
               </div>
               <label className="flex items-center gap-3 cursor-pointer group min-h-[44px] py-1">
@@ -819,7 +782,7 @@ export default function PostJobPage() {
             />
           </section>
 
-          {/* Minimum Requirements — temporarily hidden until server handling is stable */}
+          {/* Minimum Requirements */}
           {REQUIREMENTS_SECTION_ENABLED ? (
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <div className="mb-6">
