@@ -1,35 +1,58 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-const SESSION_GRACE_MS = 2500 // Allow time for session to propagate after OTP verify
+const SESSION_GRACE_MS = 4000 // Time to wait for session after form POST redirect before treating as unauthenticated
+const SESSION_POLL_MS = 400   // Poll getSession a few times; session can lag after redirect
 
 function OnboardingContent() {
   const { data: session, status, update: updateSession } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/jobs'
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [graceEnded, setGraceEnded] = useState(false)
+  const hasRedirected = useRef(false)
 
+  // After form POST redirect, session can take a moment. Refetch a few times before giving up.
   useEffect(() => {
-    if (status !== 'unauthenticated') return
-    updateSession()
-    const t = setTimeout(() => setGraceEnded(true), SESSION_GRACE_MS)
-    return () => clearTimeout(t)
+    if (status === 'authenticated') return
+    const t1 = setTimeout(() => updateSession(), SESSION_POLL_MS)
+    const t2 = setTimeout(() => updateSession(), SESSION_POLL_MS * 2)
+    const t3 = setTimeout(() => updateSession(), SESSION_POLL_MS * 3)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+    }
   }, [status, updateSession])
 
   useEffect(() => {
-    if (status === 'unauthenticated' && graceEnded) {
-      router.push(`/auth/signin?callbackUrl=${encodeURIComponent('/auth/onboarding')}`)
-    }
-  }, [status, graceEnded, router])
+    if (status !== 'unauthenticated') return
+    const t = setTimeout(() => setGraceEnded(true), SESSION_GRACE_MS)
+    return () => clearTimeout(t)
+  }, [status])
+
+  // Redirect to signin only after grace ended; use callbackUrl so user goes to dashboard after sign-in (no loop)
+  useEffect(() => {
+    if (status !== 'unauthenticated' || !graceEnded || hasRedirected.current) return
+    hasRedirected.current = true
+    const dest = `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    router.replace(dest)
+  }, [status, graceEnded, callbackUrl, router])
+
+  // Unstick prolonged 'loading' (e.g. slow session fetch after form POST redirect)
+  useEffect(() => {
+    if (status !== 'loading') return
+    const t = setTimeout(() => updateSession(), 1500)
+    return () => clearTimeout(t)
+  }, [status, updateSession])
 
   useEffect(() => {
     if (session?.user?.name) setName(session.user.name)
