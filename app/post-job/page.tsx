@@ -44,20 +44,17 @@ const COUNTRIES = [
 
 const POST_JOB_DRAFT_KEY = 'postJobDraft'
 
-const BUDGET_MIN_VALUE = 1
-const BUDGET_MAX_VALUE = 1_000_000
-
 /** Format integer with American comma convention (e.g. 1,000,000) */
 function formatBudgetAmount(n: number): string {
   return n.toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
 
-/** Parse user input (digits and commas) to integer, clamped to [min, max] */
-function parseBudgetInput(raw: string, min: number, max: number): number {
+/** Parse user input (digits and commas) to non-negative integer; no other constraints */
+function parseBudgetInput(raw: string): number {
   const digits = raw.replace(/\D/g, '')
-  const val = digits === '' ? min : parseInt(digits, 10)
-  if (Number.isNaN(val)) return min
-  return Math.max(min, Math.min(max, val))
+  if (digits === '') return 0
+  const val = parseInt(digits, 10)
+  return Number.isNaN(val) ? 0 : Math.max(0, val)
 }
 
 const REQUIREMENTS_SECTION_ENABLED = true
@@ -142,6 +139,10 @@ export default function PostJobPage() {
   const { data: session, status } = useSession()
   const { showToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [budgetMinFocused, setBudgetMinFocused] = useState(false)
+  const [budgetMinRaw, setBudgetMinRaw] = useState('')
+  const [budgetMaxFocused, setBudgetMaxFocused] = useState(false)
+  const [budgetMaxRaw, setBudgetMaxRaw] = useState('')
 
   // No auth required - allow posting jobs without signing in
 
@@ -195,15 +196,11 @@ export default function PostJobPage() {
       if (Array.isArray(draft.commodityTags)) setValue('commodityTags', draft.commodityTags as string[])
       if (draft.budgetMin != null) {
         const n = Math.round(Number(draft.budgetMin))
-        if (n >= BUDGET_MIN_VALUE && n <= BUDGET_MAX_VALUE) {
-          setValue('budgetMin', String(n))
-        }
+        if (n >= 0) setValue('budgetMin', String(n))
       }
       if (draft.budgetMax != null) {
         const n = Math.round(Number(draft.budgetMax))
-        if (n >= BUDGET_MIN_VALUE && n <= BUDGET_MAX_VALUE) {
-          setValue('budgetMax', String(n))
-        }
+        if (n >= 0) setValue('budgetMax', String(n))
       }
       if (draft.budgetCurrency) setValue('budgetCurrency', String(draft.budgetCurrency) as any)
       if (draft.budgetPeriod) setValue('budgetPeriod', String(draft.budgetPeriod) as 'DAILY' | 'MONTHLY' | 'YEARLY')
@@ -636,16 +633,22 @@ export default function PostJobPage() {
                     id="budget-min-input"
                     type="text"
                     inputMode="numeric"
-                    value={formatBudgetAmount(Math.max(BUDGET_MIN_VALUE, Math.min(BUDGET_MAX_VALUE, Number(watch('budgetMin')) || BUDGET_MIN_VALUE)))}
+                    value={budgetMinFocused ? budgetMinRaw : formatBudgetAmount(Number(watch('budgetMin')) || 0)}
+                    onFocus={() => {
+                      setBudgetMinFocused(true)
+                      setBudgetMinRaw(String(watch('budgetMin') || '0').replace(/\D/g, ''))
+                    }}
                     onChange={(e) => {
-                      const budgetMaxNum = Number(watch('budgetMax')) || BUDGET_MAX_VALUE
-                      const newMin = parseBudgetInput(e.target.value, BUDGET_MIN_VALUE, BUDGET_MAX_VALUE)
-                      const finalMin = Math.min(newMin, budgetMaxNum)
-                      setValue('budgetMin', String(finalMin))
-                      if (newMin > budgetMaxNum) setValue('budgetMax', String(newMin))
+                      const digits = e.target.value.replace(/\D/g, '')
+                      setBudgetMinRaw(digits)
+                      setValue('budgetMin', String(parseBudgetInput(e.target.value)))
+                    }}
+                    onBlur={() => {
+                      setBudgetMinFocused(false)
+                      setBudgetMinRaw('')
                     }}
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                    aria-label="Minimum budget amount (1 to 1,000,000)"
+                    aria-label="Minimum budget amount"
                   />
                 </div>
                 <div>
@@ -654,16 +657,22 @@ export default function PostJobPage() {
                     id="budget-max-input"
                     type="text"
                     inputMode="numeric"
-                    value={formatBudgetAmount(Math.max(BUDGET_MIN_VALUE, Math.min(BUDGET_MAX_VALUE, Number(watch('budgetMax')) || BUDGET_MAX_VALUE)))}
+                    value={budgetMaxFocused ? budgetMaxRaw : formatBudgetAmount(Number(watch('budgetMax')) || 0)}
+                    onFocus={() => {
+                      setBudgetMaxFocused(true)
+                      setBudgetMaxRaw(String(watch('budgetMax') || '0').replace(/\D/g, ''))
+                    }}
                     onChange={(e) => {
-                      const budgetMinNum = Number(watch('budgetMin')) || BUDGET_MIN_VALUE
-                      const newMax = parseBudgetInput(e.target.value, BUDGET_MIN_VALUE, BUDGET_MAX_VALUE)
-                      const finalMax = Math.max(newMax, budgetMinNum)
-                      setValue('budgetMax', String(finalMax))
-                      if (newMax < budgetMinNum) setValue('budgetMin', String(newMax))
+                      const digits = e.target.value.replace(/\D/g, '')
+                      setBudgetMaxRaw(digits)
+                      setValue('budgetMax', String(parseBudgetInput(e.target.value)))
+                    }}
+                    onBlur={() => {
+                      setBudgetMaxFocused(false)
+                      setBudgetMaxRaw('')
                     }}
                     className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 min-h-[48px] text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                    aria-label="Maximum budget amount (1 to 1,000,000)"
+                    aria-label="Maximum budget amount"
                   />
                 </div>
               </div>
