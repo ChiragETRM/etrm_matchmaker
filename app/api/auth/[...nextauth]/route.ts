@@ -1,20 +1,23 @@
 import { handlers } from '@/lib/auth'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Validate environment variables at runtime
+// Validate environment variables at runtime.
+// Only require Google credentials for routes that actually use Google OAuth.
 function validateAuthConfig(req: NextRequest): { valid: boolean; error?: string } {
   const missing: string[] = []
-  
+  const path = new URL(req.url).pathname
+  const isGoogleOAuth =
+    path.includes('/signin/google') ||
+    path.includes('/callback/google')
+
   if (!process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
     missing.push('AUTH_SECRET or NEXTAUTH_SECRET')
   }
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    missing.push('GOOGLE_CLIENT_ID')
+  if (isGoogleOAuth) {
+    if (!process.env.GOOGLE_CLIENT_ID) missing.push('GOOGLE_CLIENT_ID')
+    if (!process.env.GOOGLE_CLIENT_SECRET) missing.push('GOOGLE_CLIENT_SECRET')
   }
-  if (!process.env.GOOGLE_CLIENT_SECRET) {
-    missing.push('GOOGLE_CLIENT_SECRET')
-  }
-  
+
   if (missing.length > 0) {
     console.error('[NextAuth] Missing environment variables:', missing.join(', '))
     return {
@@ -22,17 +25,16 @@ function validateAuthConfig(req: NextRequest): { valid: boolean; error?: string 
       error: `Missing required environment variables: ${missing.join(', ')}`,
     }
   }
-  
-  // Check AUTH_URL
-  const authUrl = process.env.AUTH_URL || 
-                  process.env.NEXTAUTH_URL || 
-                  process.env.NEXT_PUBLIC_APP_URL ||
-                  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-  
+
+  const authUrl =
+    process.env.AUTH_URL ||
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
   if (!authUrl) {
     console.warn('[NextAuth] AUTH_URL not set, using request origin')
   }
-  
+
   return { valid: true }
 }
 
@@ -53,29 +55,45 @@ async function handleRequest(
   
   try {
     const response = await handler(req)
-    
+
+    // Inspect redirects: if NextAuth redirected to error (e.g. InvalidCheck/PKCE), show PKCEError so user can clear cookies
+    if (response.status === 302) {
+      const location = response.headers.get('location') || ''
+      try {
+        const locationUrl = new URL(location, req.url)
+        const err = locationUrl.searchParams.get('error')
+        if (
+          locationUrl.pathname === '/auth/signin' ||
+          locationUrl.pathname.includes('/api/auth/error')
+        ) {
+          if (err === 'InvalidCheck' || err === 'Callback') {
+            const signInUrl = new URL('/auth/signin', req.url)
+            signInUrl.searchParams.set('error', 'PKCEError')
+            signInUrl.searchParams.set(
+              'details',
+              encodeURIComponent('Session expired or cookies were lost. Please try again (clear cookies if it persists).')
+            )
+            return NextResponse.redirect(signInUrl)
+          }
+        }
+      } catch {
+        // ignore URL parse errors
+      }
+    }
+
     // Check if the response indicates an error
     if (response.status >= 400) {
       const responseUrl = response.headers.get('location') || response.url || req.url
       const url = new URL(responseUrl, req.url)
-      
-      // If it's an error endpoint, redirect to sign-in with the error
+
       if (url.pathname.includes('/api/auth/error') || url.pathname.includes('/auth/error')) {
         const errorParam = url.searchParams.get('error') || 'SignInError'
         const signInUrl = new URL('/auth/signin', req.url)
         signInUrl.searchParams.set('error', errorParam)
-        
-        // Log the error for debugging
-        console.error('[NextAuth] Error response:', {
-          status: response.status,
-          error: errorParam,
-          url: url.toString(),
-        })
-        
+        console.error('[NextAuth] Error response:', { status: response.status, error: errorParam, url: url.toString() })
         return NextResponse.redirect(signInUrl)
       }
-      
-      // For other error statuses, check the response body if possible
+
       if (response.status === 500) {
         try {
           const clonedResponse = response.clone()
@@ -86,11 +104,11 @@ async function handleRequest(
             return NextResponse.redirect(signInUrl)
           }
         } catch {
-          // Ignore errors reading response body
+          // ignore
         }
       }
     }
-    
+
     return response
   } catch (error) {
     console.error('[NextAuth] Handler error:', error)

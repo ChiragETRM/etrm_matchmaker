@@ -2,7 +2,25 @@ import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import Credentials from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
+import type { Adapter } from 'next-auth/adapters'
 import { prisma } from './prisma'
+
+// Wrap Prisma adapter so deleteSession doesn't throw when session already removed (e.g. signOut race).
+function wrapAdapter(adapter: Adapter): Adapter {
+  if (!adapter.deleteSession) return adapter
+  return {
+    ...adapter,
+    async deleteSession(sessionToken) {
+      try {
+        return await adapter.deleteSession!(sessionToken)
+      } catch (e: unknown) {
+        const err = e as { code?: string }
+        if (err?.code === 'P2025') return null // Prisma "Record not found"
+        throw e
+      }
+    },
+  }
+}
 import { verifyPassword } from './password'
 import { checkLoginLimit } from './auth-rate-limit'
 
@@ -65,6 +83,8 @@ if (!isProduction) {
   console.log('[NextAuth Config] Google:', hasGoogle ? 'enabled' : 'disabled (set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable)')
 }
 
+// Use state-only for Google in serverless to avoid PKCE cookie parsing issues
+// (pkceCodeVerifier cookie can be lost between redirects on Vercel). Still secure with client_secret.
 const googleProvider = hasGoogle
   ? Google({
       clientId: googleClientId!,
@@ -77,7 +97,7 @@ const googleProvider = hasGoogle
           scope: 'openid email profile https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
         },
       },
-      checks: ['pkce'],
+      checks: ['state'],
     })
   : null
 
@@ -136,7 +156,7 @@ const providers = googleProvider
   : [credentialsProvider]
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: wrapAdapter(PrismaAdapter(prisma)),
   secret: authSecret,
   basePath: '/api/auth',
   providers,

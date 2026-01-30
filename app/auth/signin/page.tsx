@@ -10,14 +10,24 @@ function clearAuthCookies() {
   const cookiesToClear = [
     'next-auth.session-token',
     '__Secure-next-auth.session-token',
+    'authjs.session-token',
+    '__Secure-authjs.session-token',
     'next-auth.callback-url',
     '__Secure-next-auth.callback-url',
+    'authjs.callback-url',
+    '__Secure-authjs.callback-url',
     'next-auth.csrf-token',
     '__Host-next-auth.csrf-token',
+    'authjs.csrf-token',
+    '__Host-authjs.csrf-token',
     'next-auth.pkce.code_verifier',
     '__Secure-next-auth.pkce.code_verifier',
+    'authjs.pkce.code_verifier',
+    '__Secure-authjs.pkce.code_verifier',
     'next-auth.state',
     '__Secure-next-auth.state',
+    'authjs.state',
+    '__Secure-authjs.state',
   ]
   cookiesToClear.forEach((name) => {
     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
@@ -126,7 +136,8 @@ function SignInContent() {
       alert('Please agree to the LearnETRM Terms & Conditions to continue.')
       return
     }
-    clearAuthCookies()
+    // Do not clear cookies before starting OAuth - it can break the state cookie on callback.
+    // Cookies are cleared only when landing with PKCEError/StateError/Configuration (see useEffect above).
     setIsClearingCookies(true)
     try {
       sessionStorage.setItem('termsAgreed', 'true')
