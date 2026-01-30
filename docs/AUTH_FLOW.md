@@ -32,10 +32,27 @@ This document describes the authentication system for the LearnETRM job portal.
 
 ## Environment Variables
 
-```
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AUTH_SECRET` or `NEXTAUTH_SECRET` | Yes | Secret for signing cookies and CSRF tokens |
+| `AUTH_URL` or `NEXTAUTH_URL` | Yes (production) | Base URL of the app (e.g. `https://jobs.learnetrm.com`) |
+| `GOOGLE_CLIENT_ID` | Yes (for Google) | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes (for Google) | Google OAuth client secret |
+| `SMTP_HOST` | Yes (for OTP) | SMTP server hostname |
+| `SMTP_PORT` | No | SMTP port (default `587`) |
+| `SMTP_USER` | Yes (for OTP) | SMTP username |
+| `SMTP_PASS` or `SMTP_PASSWORD` | Yes (for OTP) | SMTP password |
+| `SMTP_FROM` | No | From address (defaults to `SMTP_USER`) |
+| `CRON_SECRET` | No | Bearer token for `/api/cron/cleanup-auth` |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `DIRECT_URL` | Yes (Supabase) | Direct connection string for migrations |
+
+Example `.env`:
+
+```bash
 # Required for auth
-AUTH_SECRET="..."          # or NEXTAUTH_SECRET
-AUTH_URL="..."             # e.g. https://your-domain.com
+AUTH_SECRET="your-secret-at-least-32-chars"
+AUTH_URL="https://jobs.learnetrm.com"
 
 # Google OAuth
 GOOGLE_CLIENT_ID="..."
@@ -45,11 +62,15 @@ GOOGLE_CLIENT_SECRET="..."
 SMTP_HOST="smtp.example.com"
 SMTP_PORT="587"
 SMTP_USER="..."
-SMTP_PASSWORD="..."        # or SMTP_PASS
+SMTP_PASS="..."
 SMTP_FROM="noreply@learnetrm.com"
 
+# Database
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
+
 # Optional
-CRON_SECRET="..."          # for /api/cron/cleanup-auth
+CRON_SECRET="..."
 ```
 
 ## Security
@@ -65,6 +86,23 @@ CRON_SECRET="..."          # for /api/cron/cleanup-auth
 
 - Min 10 characters
 - At least 1 uppercase, 1 lowercase, 1 number
+
+## Setup Steps (Local)
+
+1. **Copy environment variables**
+   - Copy `.env.example` to `.env` and fill in values (see table above).
+
+2. **Database**
+   - Ensure PostgreSQL is running and `DATABASE_URL` / `DIRECT_URL` are set.
+   - Run: `npx prisma db push` (or `npx prisma migrate dev` for migrations).
+
+3. **SMTP (for OTP emails)**
+   - Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and optionally `SMTP_FROM`.
+   - For local testing you can use a service like Mailtrap or Gmail (app password).
+
+4. **Run the app**
+   - `npm install && npm run dev`
+   - Open `http://localhost:3000/auth/signin`.
 
 ## Schema Migration
 

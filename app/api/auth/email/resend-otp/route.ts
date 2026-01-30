@@ -29,7 +29,22 @@ export async function POST(req: NextRequest) {
 
     const ip = getClientIp(req)
 
-    const resendLimit = checkResendLimit(emailStr)
+    // 60s cooldown: do not allow resend if last OTP for this email was created < 60s ago
+    const lastOtp = await prisma.emailOtp.findFirst({
+      where: { email: emailStr },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    })
+    const sixtySecondsAgo = new Date(Date.now() - 60 * 1000)
+    if (lastOtp && lastOtp.createdAt > sixtySecondsAgo) {
+      const retryAfter = Math.ceil((lastOtp.createdAt.getTime() + 60 * 1000 - Date.now()) / 1000)
+      return NextResponse.json(
+        { error: 'Please wait before requesting another code.', retryAfterSeconds: retryAfter },
+        { status: 429, headers: { 'Retry-After': String(Math.max(1, retryAfter)) } }
+      )
+    }
+
+    const resendLimit = checkResendLimit(ip, emailStr)
     if (!resendLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many resend requests. Please try again later.', retryAfterSeconds: resendLimit.retryAfterSeconds },

@@ -118,6 +118,12 @@ export async function POST(req: NextRequest) {
       user = { ...user, name: nameFromRequest }
     }
 
+    // Audit: last login time and IP
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), lastLoginIp: ip },
+    })
+
     const needsPasswordSetup = !user.passwordHash
 
     // Create one-time token for credentials sign-in (NextAuth will create session)

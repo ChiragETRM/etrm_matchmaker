@@ -29,6 +29,8 @@ model User {
   // Job alert policy agreement
   jobAlertPolicyAgreed Boolean @default(false) @map("job_alert_policy_agreed")
   jobAlertPolicyAgreedAt DateTime? @map("job_alert_policy_agreed_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+  lastLoginIp   String?   @map("last_login_ip")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 

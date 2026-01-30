@@ -14,9 +14,11 @@ const OTP_IP_WINDOW_MS = 15 * 60 * 1000
 const OTP_EMAIL_MAX = 3
 const OTP_EMAIL_WINDOW_MS = 15 * 60 * 1000
 
-// Resend OTP: 3 per hour per email
+// Resend OTP: 3 per hour per email, 3 per hour per IP
 const RESEND_MAX = 3
 const RESEND_WINDOW_MS = 60 * 60 * 1000
+const RESEND_IP_MAX = 3
+const RESEND_IP_WINDOW_MS = 60 * 60 * 1000
 
 // OTP verify: 10 attempts per 15 min per IP
 const VERIFY_IP_MAX = 10
@@ -56,26 +58,39 @@ function checkLimit(key: string, max: number, windowMs: number): boolean {
   return true
 }
 
-export function checkResendLimit(email: string): {
+export function checkResendLimit(ip: string, email: string): {
   allowed: boolean
   retryAfterSeconds?: number
 } {
-  const key = `resend:${email.toLowerCase()}`
+  const emailKey = `resend:email:${email.toLowerCase()}`
+  const ipKey = `resend:ip:${ip}`
   const now = Date.now()
-  const entry = store.get(key)
 
-  if (!entry || now > entry.resetAt) {
-    store.set(key, { count: 1, resetAt: now + RESEND_WINDOW_MS })
-    return { allowed: true }
-  }
-
-  if (entry.count >= RESEND_MAX) {
+  const emailEntry = store.get(emailKey)
+  if (emailEntry && now <= emailEntry.resetAt && emailEntry.count >= RESEND_MAX) {
     return {
       allowed: false,
-      retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000),
+      retryAfterSeconds: Math.ceil((emailEntry.resetAt - now) / 1000),
     }
   }
-  entry.count++
+  const ipEntry = store.get(ipKey)
+  if (ipEntry && now <= ipEntry.resetAt && ipEntry.count >= RESEND_IP_MAX) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil((ipEntry.resetAt - now) / 1000),
+    }
+  }
+
+  if (!emailEntry || now > emailEntry.resetAt) {
+    store.set(emailKey, { count: 1, resetAt: now + RESEND_WINDOW_MS })
+  } else {
+    emailEntry.count++
+  }
+  if (!ipEntry || now > ipEntry.resetAt) {
+    store.set(ipKey, { count: 1, resetAt: now + RESEND_IP_WINDOW_MS })
+  } else {
+    ipEntry.count++
+  }
   return { allowed: true }
 }
 

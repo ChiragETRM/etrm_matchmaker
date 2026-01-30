@@ -39,9 +39,6 @@ function SignInContent() {
   const [email, setEmail] = useState('')
   const [otpLoading, setOtpLoading] = useState(false)
   const [otpError, setOtpError] = useState('')
-  const [magicLinkEmail, setMagicLinkEmail] = useState('')
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
-  const [magicLinkLoading, setMagicLinkLoading] = useState(false)
   const termsScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -122,37 +119,6 @@ function SignInContent() {
     }
   }
 
-  const handleMagicLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!termsAgreed) {
-      alert('Please agree to the LearnETRM Terms & Conditions to continue.')
-      return
-    }
-    const emailTrim = magicLinkEmail.trim().toLowerCase()
-    if (!emailTrim) {
-      return
-    }
-    setMagicLinkLoading(true)
-    setMagicLinkSent(false)
-    try {
-      sessionStorage.setItem('termsAgreed', 'true')
-      const result = await signIn('email', {
-        email: emailTrim,
-        callbackUrl: `${callbackUrl}?termsAgreed=true`,
-        redirect: false,
-      })
-      if (result?.error) {
-        alert(result.error === 'EmailSignin' ? 'Failed to send sign-in email. Please try again.' : String(result.error))
-        return
-      }
-      setMagicLinkSent(true)
-    } catch {
-      alert('Failed to send sign-in email. Please try again.')
-    } finally {
-      setMagicLinkLoading(false)
-    }
-  }
-
   const handleGoogleSignIn = async () => {
     if (!termsAgreed) {
       alert('Please agree to the LearnETRM Terms & Conditions to continue.')
@@ -211,7 +177,7 @@ function SignInContent() {
 
           <form onSubmit={handleOtpRequest} className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name (optional, for new accounts)</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name (required for first-time registration; optional for returning users)</label>
               <input
                 id="name"
                 type="text"
@@ -243,7 +209,7 @@ function SignInContent() {
             </button>
           </form>
 
-          <p className="mt-2 text-sm text-gray-500 text-center">
+          <p className="mt-2 text-sm text-gray-500 text-center" role="status">
             If an account exists for this email, a code has been sent.
           </p>
 
@@ -294,32 +260,6 @@ function SignInContent() {
                 </svg>
                 Google
               </button>
-
-              <form onSubmit={handleMagicLinkSubmit} className="space-y-2">
-                <label htmlFor="magic-link-email" className="block text-sm font-medium text-gray-700">Sign in using magic link</label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    id="magic-link-email"
-                    type="email"
-                    value={magicLinkEmail}
-                    onChange={(e) => setMagicLinkEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    disabled={magicLinkLoading || !termsAgreed}
-                    className="flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:bg-gray-50"
-                  />
-                  <button
-                    type="submit"
-                    disabled={magicLinkLoading || !magicLinkEmail.trim() || !termsAgreed}
-                    className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
-                  >
-                    {magicLinkLoading ? 'Sending…' : 'Send magic link'}
-                  </button>
-                </div>
-                {magicLinkSent && (
-                  <p className="text-sm text-green-600 font-medium">Check your email for a sign-in link.</p>
-                )}
-              </form>
 
               <p className="text-center">
                 <Link href="/auth/login" className="text-sm text-indigo-600 hover:text-indigo-500">Sign in with email and password</Link>

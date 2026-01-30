@@ -138,6 +138,7 @@ export default function ForgotPage() {
 
           {step === 'verify' && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <p className="text-sm text-gray-500 text-center">If an account exists for this email, a code has been sent.</p>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Email</label>
                 <input

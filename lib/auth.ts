@@ -1,10 +1,8 @@
 import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import Credentials from 'next-auth/providers/credentials'
-import Email from 'next-auth/providers/email'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from './prisma'
-import { sendEmail } from './email'
 import { verifyPassword } from './password'
 import { checkLoginLimit } from './auth-rate-limit'
 
@@ -66,36 +64,6 @@ if (!isProduction) {
   console.log('[NextAuth Config] AUTH_SECRET:', authSecret ? '***set***' : 'MISSING')
   console.log('[NextAuth Config] Google:', hasGoogle ? 'enabled' : 'disabled (set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable)')
 }
-
-// Minimal server config so Email provider initializes; we use sendVerificationRequest for actual sending
-const emailServer = {
-  host: process.env.SMTP_HOST || 'localhost',
-  port: parseInt(process.env.SMTP_PORT || '25', 10),
-  auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '',
-  },
-}
-
-const emailProvider = Email({
-  server: emailServer,
-  from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@learnetrm.com',
-  sendVerificationRequest: async ({ identifier: email, url }) => {
-    const { success, error } = await sendEmail({
-      to: email,
-      subject: 'Sign in to LearnETRM',
-      html: `
-          <p>Click the link below to sign in to LearnETRM:</p>
-          <p><a href="${url}" style="word-break:break-all">${url}</a></p>
-          <p>This link expires in 24 hours. If you didn't request this, you can ignore this email.</p>
-        `,
-    })
-    if (!success) {
-      console.error('[NextAuth Email] Failed to send magic link:', error)
-      throw new Error(error || 'Failed to send sign-in email')
-    }
-  },
-})
 
 const googleProvider = hasGoogle
   ? Google({
@@ -164,8 +132,8 @@ const credentialsProvider = Credentials({
 })
 
 const providers = googleProvider
-  ? [credentialsProvider, emailProvider, googleProvider]
-  : [credentialsProvider, emailProvider]
+  ? [credentialsProvider, googleProvider]
+  : [credentialsProvider]
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
