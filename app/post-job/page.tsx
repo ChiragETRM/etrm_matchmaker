@@ -112,8 +112,6 @@ export default function PostJobPage() {
   const { data: session, status } = useSession()
   const { showToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [budgetMinK, setBudgetMinK] = useState(70)
-  const [budgetMaxK, setBudgetMaxK] = useState(185)
 
   // No auth required - allow posting jobs without signing in
 
@@ -130,9 +128,10 @@ export default function PostJobPage() {
       roleCategoryOther: '',
       etrmPackages: [] as string[],
       commodityTags: [] as string[],
-      budgetMin: '70000',
-      budgetMax: '185000',
+      budgetMin: '',
+      budgetMax: '',
       budgetCurrency: 'USD',
+      budgetPeriod: 'YEARLY' as 'DAILY' | 'MONTHLY' | 'YEARLY',
       budgetIsEstimate: false,
       visaSponsorshipProvided: undefined as boolean | undefined,
       jdText: '',
@@ -345,9 +344,9 @@ export default function PostJobPage() {
         ...data,
         seniority,
         roleCategory: data.roleCategory === 'OTHER' ? data.roleCategoryOther : data.roleCategory,
-        budgetMin: parseFloat(data.budgetMin),
-        budgetMax: parseFloat(data.budgetMax),
-        budgetPeriod: 'ANNUAL' as const,
+        budgetMin: data.budgetMin ? parseFloat(data.budgetMin) : undefined,
+        budgetMax: data.budgetMax ? parseFloat(data.budgetMax) : undefined,
+        budgetPeriod: data.budgetPeriod,
         visaSponsorshipProvided: data.visaSponsorshipProvided,
         recruiterEmailCc: [],
         emailSubjectPrefix: '',
@@ -588,9 +587,9 @@ export default function PostJobPage() {
             </div>
           </section>
 
-          {/* Budget Range — single dual-thumb slider */}
+          {/* Estimate */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">Budget Range *</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">Estimate</h2>
             <div className="space-y-5">
               <div>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
