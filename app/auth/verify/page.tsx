@@ -18,12 +18,21 @@ function VerifyContent() {
   const [resendCooldown, setResendCooldown] = useState(0)
   const [resendLoading, setResendLoading] = useState(false)
 
+  // Sync email from URL or sessionStorage; only redirect to signin when there is
+  // no email from any source (avoids redirecting after OTP success when we've
+  // cleared storage but form POST / redirect hasn't happened yet)
   useEffect(() => {
     const stored = sessionStorage.getItem('otpEmail')
-    if (stored) setEmail(stored)
-    else if (emailFromUrl) setEmail(emailFromUrl)
-    else router.push('/auth/signin')
-  }, [emailFromUrl, router])
+    if (stored) {
+      setEmail(stored)
+      return
+    }
+    if (emailFromUrl) {
+      setEmail(emailFromUrl)
+      return
+    }
+    if (!email) router.push('/auth/signin')
+  }, [emailFromUrl, email, router])
 
   useEffect(() => {
     if (resendCooldown <= 0) return
