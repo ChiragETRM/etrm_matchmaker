@@ -178,7 +178,6 @@ function SignInContent() {
         </div>
         <h1 className="text-center text-3xl font-bold text-gray-900">Hand Picked ETRM/CTRM Jobs</h1>
         <h2 className="mt-6 text-center text-xl text-gray-600">Sign in to your account</h2>
-        <p className="mt-2 text-center text-sm text-gray-500">Step 1: Enter your email to receive a verification code</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -194,9 +193,40 @@ function SignInContent() {
             </div>
           )}
 
-          <form onSubmit={handleOtpRequest} className="space-y-4">
+          {/* 1. Terms and conditions at top */}
+          <div className="rounded-lg border border-gray-200 bg-gray-50">
+            <div
+              ref={termsScrollRef}
+              className="max-h-48 overflow-y-auto p-4 text-sm text-gray-700"
+              onScroll={() => {
+                const el = termsScrollRef.current
+                if (el) setHasScrolledToBottom(el.scrollHeight - el.scrollTop <= el.clientHeight + 20)
+              }}
+            >
+              <p className="font-semibold mb-2">LearnETRM – Platform Terms</p>
+              <p className="mb-3">By signing in or applying, you agree to our terms. LearnETRM is a curated job platform. By applying, you authorize us to represent you for that role and share your profile with the hiring company.</p>
+              <p className="mb-3">You confirm your information is accurate and you have not applied to the same role through another channel.</p>
+              <p className="text-gray-600">By signing in you consent to job-related emails from LearnETRM.</p>
+            </div>
+            {/* 2. Agree */}
+            <div className="p-4 border-t">
+              <label className={`flex items-start gap-3 cursor-pointer ${!hasScrolledToBottom ? 'opacity-75' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={termsAgreed}
+                  onChange={(e) => setTermsAgreed(e.target.checked)}
+                  disabled={!hasScrolledToBottom}
+                  className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 rounded"
+                />
+                <span className="text-sm font-medium">I agree to the LearnETRM Terms & Conditions</span>
+              </label>
+            </div>
+          </div>
+
+          {/* 3. Name, 4. Email, then Send verification code */}
+          <form onSubmit={handleOtpRequest} className="mt-6 space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name (required for first-time registration; optional for returning users)</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
               <input
                 id="name"
                 type="text"
@@ -228,38 +258,7 @@ function SignInContent() {
             </button>
           </form>
 
-          <p className="mt-2 text-sm text-gray-500 text-center" role="status">
-            If an account exists for this email, a code has been sent.
-          </p>
-
-          <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50">
-            <div
-              ref={termsScrollRef}
-              className="max-h-48 overflow-y-auto p-4 text-sm text-gray-700"
-              onScroll={() => {
-                const el = termsScrollRef.current
-                if (el) setHasScrolledToBottom(el.scrollHeight - el.scrollTop <= el.clientHeight + 20)
-              }}
-            >
-              <p className="font-semibold mb-2">LearnETRM – Platform Terms</p>
-              <p className="mb-3">By signing in or applying, you agree to our terms. LearnETRM is a curated job platform. By applying, you authorize us to represent you for that role and share your profile with the hiring company.</p>
-              <p className="mb-3">You confirm your information is accurate and you have not applied to the same role through another channel.</p>
-              <p className="text-gray-600">By signing in you consent to job-related emails from LearnETRM.</p>
-            </div>
-            <div className="p-4 border-t">
-              <label className={`flex items-start gap-3 cursor-pointer ${!hasScrolledToBottom ? 'opacity-75' : ''}`}>
-                <input
-                  type="checkbox"
-                  checked={termsAgreed}
-                  onChange={(e) => setTermsAgreed(e.target.checked)}
-                  disabled={!hasScrolledToBottom}
-                  className="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 rounded"
-                />
-                <span className="text-sm font-medium">I agree to the LearnETRM Terms & Conditions</span>
-              </label>
-            </div>
-          </div>
-
+          {/* 5. Or continue with, 6. Google, 7. Already have an account */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
@@ -281,7 +280,7 @@ function SignInContent() {
               </button>
 
               <p className="text-center">
-                <Link href="/auth/login" className="text-sm text-indigo-600 hover:text-indigo-500">Sign in with email and password</Link>
+                <Link href="/auth/login" className="text-sm text-indigo-600 hover:text-indigo-500">Already have an account – Sign In!</Link>
               </p>
             </div>
           </div>
