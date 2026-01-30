@@ -2,20 +2,23 @@ import NextAuth from 'next-auth'
 import Google from 'next-auth/providers/google'
 import Credentials from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@auth/prisma-adapter'
-import type { Adapter } from 'next-auth/adapters'
+import type { Adapter, AdapterSession } from 'next-auth/adapters'
 import { prisma } from './prisma'
 
 // Wrap Prisma adapter so deleteSession doesn't throw when session already removed (e.g. signOut race).
 function wrapAdapter(adapter: Adapter): Adapter {
   if (!adapter.deleteSession) return adapter
+  const orig = adapter.deleteSession.bind(adapter)
   return {
     ...adapter,
-    async deleteSession(sessionToken) {
+    async deleteSession(
+      sessionToken: string
+    ): Promise<AdapterSession | null | undefined> {
       try {
-        return await adapter.deleteSession!(sessionToken)
+        return (await orig(sessionToken)) ?? undefined
       } catch (e: unknown) {
         const err = e as { code?: string }
-        if (err?.code === 'P2025') return null // Prisma "Record not found"
+        if (err?.code === 'P2025') return undefined // Prisma "Record not found"
         throw e
       }
     },
