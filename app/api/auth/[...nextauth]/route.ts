@@ -51,13 +51,13 @@ async function handleRequest(
           locationUrl.pathname === '/auth/signin' ||
           locationUrl.pathname.includes('/api/auth/error')
         ) {
-          if (err === 'InvalidCheck' || err === 'Callback') {
+          if (err === 'InvalidCheck' || err === 'Callback' || err === 'CallbackRouteError') {
             const signInUrl = new URL('/auth/signin', req.url)
             signInUrl.searchParams.set('error', 'StateError')
             signInUrl.searchParams.set(
               'details',
               encodeURIComponent(
-                'Session state expired or was lost. Clear cookies for this site and try again in a single tab.'
+                'Session state expired or mismatch (e.g. multiple tabs). Clear cookies for this site and try again in a single tab.'
               )
             )
             return NextResponse.redirect(signInUrl)
@@ -132,8 +132,24 @@ async function handleRequest(
         return NextResponse.redirect(url)
       }
       
-      // Handle state cookie parsing errors first (state value could not be parsed).
-      // Must run before the generic invalidcheck block so state errors get StateError not PKCEError.
+      // CallbackRouteError: "unexpected state response parameter value" — state in URL doesn't match cookie (e.g. multiple tabs or stale callback)
+      const causeMessage = ((error as Error & { cause?: Error }).cause?.message ?? '').toLowerCase()
+      if (
+        errorMessage.includes('callbackrouteerror') ||
+        (causeMessage.includes('unexpected') && causeMessage.includes('state'))
+      ) {
+        const url = new URL('/auth/signin', req.url)
+        url.searchParams.set('error', 'StateError')
+        url.searchParams.set(
+          'details',
+          encodeURIComponent(
+            'Sign-in state mismatch (often from multiple tabs or an old link). Clear cookies for this site and try again in a single tab.'
+          )
+        )
+        return NextResponse.redirect(url)
+      }
+
+      // Handle state cookie parsing errors (state value could not be parsed).
       if (
         errorMessage.includes('state') &&
         (errorMessage.includes('could not be parsed') ||
