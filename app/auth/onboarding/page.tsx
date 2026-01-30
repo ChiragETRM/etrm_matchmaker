@@ -4,23 +4,39 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+const SESSION_GRACE_MS = 2500 // Allow time for session to propagate after OTP verify
+
 function OnboardingContent() {
-  const { data: session, status } = useSession()
+  const { data: session, status, update: updateSession } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/jobs'
+  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [graceEnded, setGraceEnded] = useState(false)
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (status !== 'unauthenticated') return
+    updateSession()
+    const t = setTimeout(() => setGraceEnded(true), SESSION_GRACE_MS)
+    return () => clearTimeout(t)
+  }, [status, updateSession])
+
+  useEffect(() => {
+    if (status === 'unauthenticated' && graceEnded) {
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent('/auth/onboarding')}`)
     }
-  }, [status, router])
+  }, [status, graceEnded, router])
+
+  useEffect(() => {
+    if (session?.user?.name) setName(session.user.name)
+  }, [session?.user?.name])
 
   const validate = () => {
+    if (!name.trim()) return 'Please enter your name'
     if (password.length < 10) return 'Password must be at least 10 characters'
     if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter'
     if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter'
@@ -42,7 +58,7 @@ function OnboardingContent() {
       const res = await fetch('/api/auth/password/set', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, name: name.trim() }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -57,10 +73,19 @@ function OnboardingContent() {
     }
   }
 
-  if (status === 'loading' || status === 'unauthenticated') {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
+      </div>
+    )
+  }
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">
+          {graceEnded ? 'Redirecting to sign in...' : 'Setting up your account...'}
+        </div>
       </div>
     )
   }
@@ -75,6 +100,18 @@ function OnboardingContent() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">Required for your account</p>
+            </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
               <input

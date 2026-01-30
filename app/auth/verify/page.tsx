@@ -55,35 +55,52 @@ function VerifyContent() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Invalid or expired code.')
+        setLoading(false)
         return
       }
       sessionStorage.removeItem('otpEmail')
       sessionStorage.removeItem('otpName')
-      const signInOk = await completeSignIn(data.signInToken)
-      if (!signInOk) return
-      if (data.needsPasswordSetup) {
-        router.push(`/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`)
-      } else {
-        router.push(callbackUrl)
-      }
+      const redirectUrl = data.needsPasswordSetup
+        ? `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`
+        : callbackUrl
+      await completeSignInWithFormPost(data.signInToken, redirectUrl)
     } catch {
       setError('Something went wrong. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
 
-  const completeSignIn = async (token: string): Promise<boolean> => {
-    const { signIn } = await import('next-auth/react')
-    const result = await signIn('credentials', {
-      token,
-      redirect: false,
-    })
-    if (result?.error) {
+  /**
+   * Submit credentials via form POST so the browser does a full navigation.
+   * This guarantees the session cookie is set and the redirect lands with auth.
+   * (signIn(..., { redirect: false }) + router.push was unreliable.)
+   */
+  const completeSignInWithFormPost = async (token: string, callbackUrl: string) => {
+    const { getCsrfToken } = await import('next-auth/react')
+    const csrfToken = await getCsrfToken()
+    if (!csrfToken) {
       setError('Session error. Please try again.')
-      return false
+      setLoading(false)
+      return
     }
-    return true
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = '/api/auth/callback/credentials'
+    form.style.display = 'none'
+    const fields: [string, string][] = [
+      ['csrfToken', csrfToken],
+      ['token', token],
+      ['callbackUrl', callbackUrl],
+    ]
+    fields.forEach(([name, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = name
+      input.value = value
+      form.appendChild(input)
+    })
+    document.body.appendChild(form)
+    form.submit()
   }
 
   const handleResend = async () => {

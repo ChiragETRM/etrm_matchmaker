@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { password } = body as { password?: string }
+    const { password, name: nameFromBody } = body as { password?: string; name?: string }
 
     if (typeof password !== 'string' || !password) {
       return NextResponse.json(
@@ -29,10 +29,14 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(password)
+    const nameTrim = typeof nameFromBody === 'string' ? nameFromBody.trim() || null : null
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        ...(nameTrim !== null && { name: nameTrim }),
+      },
     })
 
     return NextResponse.json({ success: true })
