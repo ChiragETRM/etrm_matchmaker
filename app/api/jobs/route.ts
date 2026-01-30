@@ -31,7 +31,7 @@ const jobSchema = z.object({
       label: z.string(),
       type: z.enum(['BOOLEAN', 'SINGLE_SELECT', 'MULTI_SELECT', 'NUMBER', 'COUNTRY']),
       required: z.boolean().default(false),
-      options: z.array(z.string()).optional(),
+      options: z.array(z.string()).nullish(),
       orderIndex: z.number().int(),
     })
   ).default([]),
@@ -47,7 +47,16 @@ const jobSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    let body: any
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    }
+
     const data = jobSchema.parse(body)
 
     const expiresAt = new Date()

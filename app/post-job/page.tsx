@@ -105,6 +105,7 @@ export default function PostJobPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [budgetMinK, setBudgetMinK] = useState(70)
   const [budgetMaxK, setBudgetMaxK] = useState(185)
 
@@ -171,6 +172,7 @@ export default function PostJobPage() {
 
   const onSubmit = async (data: any) => {
     setIsSubmitting(true)
+    setSubmitError(null)
     try {
       // Convert experience range to seniority for backward compatibility
       let seniority = 'MID'
@@ -185,7 +187,7 @@ export default function PostJobPage() {
 
       data.gateRules.forEach((rule: GateRule, index: number) => {
         if (rule.type === 'years_experience' && rule.packages && rule.packages.length > 0) {
-          rule.packages.forEach((pkg) => {
+          rule.packages.forEach((pkg: string) => {
             // Use custom package name if "Other" is selected and custom name is provided
             const packageName = pkg === 'Other' && rule.customPackageName ? rule.customPackageName : pkg
             const questionKey = `years_${packageName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')}`
@@ -194,13 +196,12 @@ export default function PostJobPage() {
               label: `How many years of hands-on ${packageName} experience do you have?`,
               type: 'NUMBER',
               required: true,
-              options: null,
               orderIndex: questionIndex++,
             })
             processedGateRules.push({
               questionKey,
               operator: 'GTE',
-              value: rule.years || 2,
+              value: Number(rule.years) || 2,
               orderIndex: index,
             })
           })
@@ -243,7 +244,6 @@ export default function PostJobPage() {
             label: `Do you have a legal work permit for ${rule.country}?`,
             type: 'BOOLEAN',
             required: true,
-            options: null,
             orderIndex: questionIndex++,
           })
           processedGateRules.push({
@@ -260,7 +260,6 @@ export default function PostJobPage() {
             label: rule.otherText,
             type: 'BOOLEAN',
             required: true,
-            options: null,
             orderIndex: questionIndex++,
           })
           processedGateRules.push({
@@ -272,14 +271,26 @@ export default function PostJobPage() {
         }
       })
 
-      const payload = {
-        ...data,
+      // Build a clean payload — only include fields the API expects
+      const payload: Record<string, any> = {
+        title: data.title,
+        companyName: data.companyName || undefined,
+        locationText: data.locationText,
+        countryCode: data.countryCode || undefined,
+        remotePolicy: data.remotePolicy,
+        contractType: data.contractType,
         seniority,
         roleCategory: data.roleCategory === 'OTHER' ? data.roleCategoryOther : data.roleCategory,
+        etrmPackages: data.etrmPackages || [],
+        commodityTags: data.commodityTags || [],
         budgetMin: parseFloat(data.budgetMin),
         budgetMax: parseFloat(data.budgetMax),
+        budgetCurrency: data.budgetCurrency,
         budgetPeriod: 'ANNUAL' as const,
+        budgetIsEstimate: data.budgetIsEstimate,
         visaSponsorshipProvided: data.visaSponsorshipProvided,
+        jdText: data.jdText,
+        recruiterEmailTo: data.recruiterEmailTo,
         recruiterEmailCc: [],
         emailSubjectPrefix: '',
         questions,
@@ -292,24 +303,34 @@ export default function PostJobPage() {
         body: JSON.stringify(payload),
       })
 
-      const result = await response.json()
+      // Safely parse the response — handle empty or non-JSON bodies
+      let result: any
+      const responseText = await response.text()
+      try {
+        result = responseText ? JSON.parse(responseText) : null
+      } catch {
+        console.error('Failed to parse response:', responseText)
+        result = null
+      }
 
-      if (result.success) {
+      if (result?.success) {
         router.push(`/post-job/success?slug=${result.job.slug}&expiresAt=${result.job.expiresAt}`)
       } else {
-        // Show detailed error message
-        let errorMsg = result.error || 'Unknown error'
-        if (result.details && Array.isArray(result.details)) {
-          const validationErrors = result.details.map((d: any) => `${d.path.join('.')}: ${d.message}`).join('\n')
-          errorMsg = `Validation errors:\n${validationErrors}`
+        let errorMsg: string
+        if (!result) {
+          errorMsg = `Server error (${response.status}). Please try again.`
+        } else if (result.details && Array.isArray(result.details)) {
+          const validationErrors = result.details.map((d: any) => `${d.path?.join('.') || 'field'}: ${d.message}`).join(', ')
+          errorMsg = `Validation errors: ${validationErrors}`
+        } else {
+          errorMsg = result.error || 'Unknown error'
         }
-        alert('Failed to create job: ' + errorMsg)
-        console.error('Job creation error:', result)
+        setSubmitError(errorMsg)
+        console.error('Job creation error:', result || responseText)
       }
     } catch (error) {
       console.error('Error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Network error. Please check your connection and try again.'
-      alert('Failed to create job: ' + errorMessage)
+      setSubmitError('Network error. Please check your connection and try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -947,6 +968,18 @@ export default function PostJobPage() {
               </p>
             </div>
           </section>
+
+          {submitError && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-red-500 font-bold text-lg leading-none mt-0.5">!</span>
+                <div>
+                  <p className="font-semibold text-red-800">Failed to create job</p>
+                  <p className="text-sm text-red-700 mt-1">{submitError}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
