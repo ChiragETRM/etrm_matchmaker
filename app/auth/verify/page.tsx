@@ -61,7 +61,12 @@ function VerifyContent() {
       const res = await fetch('/api/auth/email/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: eTrim, otp: otpTrim, name: nameFromStorage || undefined }),
+        body: JSON.stringify({
+          email: eTrim,
+          otp: otpTrim,
+          name: nameFromStorage || undefined,
+          callbackUrl,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -80,46 +85,14 @@ function VerifyContent() {
         window.location.href = `/auth/onboarding?${params.toString()}`
         return
       }
-      await completeSignInWithFormPost(data.signInToken, callbackUrl)
+      // Existing user: session was created and cookie set by verify-otp API. Just redirect.
+      sessionStorage.removeItem('otpEmail')
+      sessionStorage.removeItem('otpName')
+      window.location.href = data.redirectUrl || callbackUrl
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
-  }
-
-  /**
-   * Submit credentials via form POST so the browser does a full navigation.
-   * This guarantees the session cookie is set and the redirect lands with auth.
-   * (signIn(..., { redirect: false }) + router.push was unreliable.)
-   */
-  const completeSignInWithFormPost = async (token: string, callbackUrl: string) => {
-    const { getCsrfToken } = await import('next-auth/react')
-    const csrfToken = await getCsrfToken()
-    if (!csrfToken) {
-      setError('Session error. Please try again.')
-      setLoading(false)
-      return
-    }
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = '/api/auth/callback/credentials'
-    form.style.display = 'none'
-    const fields: [string, string][] = [
-      ['csrfToken', csrfToken],
-      ['token', token],
-      ['callbackUrl', callbackUrl],
-    ]
-    fields.forEach(([name, value]) => {
-      const input = document.createElement('input')
-      input.type = 'hidden'
-      input.name = name
-      input.value = value
-      form.appendChild(input)
-    })
-    document.body.appendChild(form)
-    sessionStorage.removeItem('otpEmail')
-    sessionStorage.removeItem('otpName')
-    form.submit()
   }
 
   const handleResend = async () => {
