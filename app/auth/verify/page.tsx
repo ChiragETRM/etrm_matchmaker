@@ -60,10 +60,12 @@ function VerifyContent() {
       }
       sessionStorage.removeItem('otpEmail')
       sessionStorage.removeItem('otpName')
-      const redirectUrl = data.needsPasswordSetup
-        ? `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`
-        : callbackUrl
-      await completeSignInWithFormPost(data.signInToken, redirectUrl)
+      if (data.needsPasswordSetup) {
+        sessionStorage.setItem('onboardingToken', data.signInToken)
+        window.location.href = `/auth/onboarding?callbackUrl=${encodeURIComponent(callbackUrl)}`
+        return
+      }
+      await completeSignInWithFormPost(data.signInToken, callbackUrl)
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)

@@ -4,59 +4,46 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-const SESSION_GRACE_MS = 4000 // Time to wait for session after form POST redirect before treating as unauthenticated
-const SESSION_POLL_MS = 400   // Poll getSession a few times; session can lag after redirect
+const ONBOARDING_TOKEN_KEY = 'onboardingToken'
 
 function OnboardingContent() {
-  const { data: session, status, update: updateSession } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const [onboardingToken, setOnboardingToken] = useState<string | null>(null)
+  const [storageChecked, setStorageChecked] = useState(false)
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [graceEnded, setGraceEnded] = useState(false)
   const hasRedirected = useRef(false)
 
-  // After form POST redirect, session can take a moment. Refetch a few times before giving up.
   useEffect(() => {
-    if (status === 'authenticated') return
-    const t1 = setTimeout(() => updateSession(), SESSION_POLL_MS)
-    const t2 = setTimeout(() => updateSession(), SESSION_POLL_MS * 2)
-    const t3 = setTimeout(() => updateSession(), SESSION_POLL_MS * 3)
-    return () => {
-      clearTimeout(t1)
-      clearTimeout(t2)
-      clearTimeout(t3)
-    }
-  }, [status, updateSession])
-
-  useEffect(() => {
-    if (status !== 'unauthenticated') return
-    const t = setTimeout(() => setGraceEnded(true), SESSION_GRACE_MS)
-    return () => clearTimeout(t)
-  }, [status])
-
-  // Redirect to signin only after grace ended; use callbackUrl so user goes to dashboard after sign-in (no loop)
-  useEffect(() => {
-    if (status !== 'unauthenticated' || !graceEnded || hasRedirected.current) return
-    hasRedirected.current = true
-    const dest = `/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`
-    router.replace(dest)
-  }, [status, graceEnded, callbackUrl, router])
-
-  // Unstick prolonged 'loading' (e.g. slow session fetch after form POST redirect)
-  useEffect(() => {
-    if (status !== 'loading') return
-    const t = setTimeout(() => updateSession(), 1500)
-    return () => clearTimeout(t)
-  }, [status, updateSession])
+    if (typeof window === 'undefined') return
+    setOnboardingToken(sessionStorage.getItem(ONBOARDING_TOKEN_KEY))
+    setStorageChecked(true)
+  }, [])
 
   useEffect(() => {
     if (session?.user?.name) setName(session.user.name)
   }, [session?.user?.name])
+
+  const canShowForm =
+    storageChecked &&
+    (onboardingToken !== null || status === 'authenticated')
+
+  useEffect(() => {
+    if (!storageChecked) return
+    if (canShowForm) return
+    if (onboardingToken !== null) return
+    if (status === 'loading') return
+    if (status === 'authenticated') return
+    if (hasRedirected.current) return
+    hasRedirected.current = true
+    router.replace(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+  }, [storageChecked, canShowForm, onboardingToken, status, callbackUrl, router])
 
   const validate = () => {
     if (!name.trim()) return 'Please enter your name'
@@ -66,6 +53,34 @@ function OnboardingContent() {
     if (!/[0-9]/.test(password)) return 'Password must contain at least one number'
     if (password !== confirm) return 'Passwords do not match'
     return ''
+  }
+
+  const handleSubmitWithToken = async () => {
+    const { getCsrfToken } = await import('next-auth/react')
+    const csrfToken = await getCsrfToken()
+    if (!csrfToken) {
+      setError('Session error. Please try again.')
+      return
+    }
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = '/api/auth/callback/credentials'
+    form.style.display = 'none'
+    const fields: [string, string][] = [
+      ['csrfToken', csrfToken],
+      ['token', onboardingToken!],
+      ['callbackUrl', callbackUrl],
+    ]
+    fields.forEach(([name, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = name
+      input.value = value
+      form.appendChild(input)
+    })
+    document.body.appendChild(form)
+    sessionStorage.removeItem(ONBOARDING_TOKEN_KEY)
+    form.submit()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +93,25 @@ function OnboardingContent() {
     setError('')
     setLoading(true)
     try {
+      if (onboardingToken) {
+        const res = await fetch('/api/auth/onboarding-complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: onboardingToken,
+            name: name.trim(),
+            password,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          setError(data.error || 'Failed to set up account.')
+          setLoading(false)
+          return
+        }
+        await handleSubmitWithToken()
+        return
+      }
       const res = await fetch('/api/auth/password/set', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,6 +120,7 @@ function OnboardingContent() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Failed to set password.')
+        setLoading(false)
         return
       }
       router.push(callbackUrl)
@@ -96,19 +131,18 @@ function OnboardingContent() {
     }
   }
 
-  if (status === 'loading') {
+  if (!storageChecked || (!onboardingToken && status === 'loading')) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading...</div>
       </div>
     )
   }
-  if (status === 'unauthenticated') {
+
+  if (!canShowForm) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">
-          {graceEnded ? 'Redirecting to sign in...' : 'Setting up your account...'}
-        </div>
+        <div className="text-gray-500">Redirecting to sign in...</div>
       </div>
     )
   }
@@ -167,7 +201,7 @@ function OnboardingContent() {
               disabled={loading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
             >
-              {loading ? 'Setting...' : 'Set password'}
+              {loading ? 'Setting up...' : 'Continue'}
             </button>
           </form>
         </div>
