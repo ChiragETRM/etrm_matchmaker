@@ -18,7 +18,7 @@ const jobSchema = z.object({
   budgetMin: z.number().optional(),
   budgetMax: z.number().optional(),
   budgetCurrency: z.string().optional(),
-  budgetPeriod: z.enum(['ANNUAL', 'DAY_RATE']).optional(),
+  budgetPeriod: z.enum(['DAILY', 'MONTHLY', 'YEARLY', 'ANNUAL', 'DAY_RATE']).optional(),
   budgetIsEstimate: z.boolean().default(false),
   visaSponsorshipProvided: z.boolean().optional(),
   jdText: z.string().min(1),

@@ -457,7 +457,7 @@ export default function JobDetailPage() {
 
           {job.budgetMin || job.budgetMax ? (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-2">Budget</h2>
+              <h2 className="text-lg font-semibold mb-2">Estimate</h2>
               <p className="text-sm">
                 {job.budgetMin && job.budgetMax
                   ? `${job.budgetCurrency} ${job.budgetMin.toLocaleString()} - ${job.budgetMax.toLocaleString()}`
@@ -465,7 +465,11 @@ export default function JobDetailPage() {
                   ? `${job.budgetCurrency} ${job.budgetMin.toLocaleString()}+`
                   : `${job.budgetCurrency} Up to ${job.budgetMax?.toLocaleString()}`}
                 {' '}
-                {job.budgetPeriod === 'ANNUAL' ? 'per year' : 'per day'}
+                {job.budgetPeriod === 'DAILY' || job.budgetPeriod === 'DAY_RATE'
+                  ? 'per day'
+                  : job.budgetPeriod === 'MONTHLY'
+                  ? 'per month'
+                  : 'per year'}
                 {job.budgetIsEstimate && ' (estimated)'}
               </p>
             </div>

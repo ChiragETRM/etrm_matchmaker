@@ -105,8 +105,6 @@ export default function PostJobPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [budgetMinK, setBudgetMinK] = useState(70)
-  const [budgetMaxK, setBudgetMaxK] = useState(185)
 
   // No auth required - allow posting jobs without signing in
 
@@ -123,9 +121,10 @@ export default function PostJobPage() {
       roleCategoryOther: '',
       etrmPackages: [] as string[],
       commodityTags: [] as string[],
-      budgetMin: '70000',
-      budgetMax: '185000',
+      budgetMin: '',
+      budgetMax: '',
       budgetCurrency: 'USD',
+      budgetPeriod: 'YEARLY' as const,
       budgetIsEstimate: false,
       visaSponsorshipProvided: undefined as boolean | undefined,
       jdText: '',
@@ -276,9 +275,9 @@ export default function PostJobPage() {
         ...data,
         seniority,
         roleCategory: data.roleCategory === 'OTHER' ? data.roleCategoryOther : data.roleCategory,
-        budgetMin: parseFloat(data.budgetMin),
-        budgetMax: parseFloat(data.budgetMax),
-        budgetPeriod: 'ANNUAL' as const,
+        budgetMin: data.budgetMin ? parseFloat(data.budgetMin) : undefined,
+        budgetMax: data.budgetMax ? parseFloat(data.budgetMax) : undefined,
+        budgetPeriod: data.budgetPeriod,
         visaSponsorshipProvided: data.visaSponsorshipProvided,
         recruiterEmailCc: [],
         emailSubjectPrefix: '',
@@ -500,88 +499,120 @@ export default function PostJobPage() {
             </div>
           </section>
 
-          {/* Budget Range — single dual-thumb slider */}
+          {/* Estimate */}
           <section className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">Budget Range *</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">Estimate</h2>
             <div className="space-y-5">
-              <div>
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Set your budget range
-                  </label>
-                  <span className="text-lg font-bold text-blue-600 tabular-nums">
-                    {budgetMinK}k – {budgetMaxK}k {watch('budgetCurrency')}
-                  </span>
-                </div>
-                <div className="relative h-10 flex items-center">
-                  {/* Single track: gray bar */}
-                  <div
-                    className="absolute inset-x-0 h-3 rounded-full bg-gray-200"
-                    aria-hidden
-                  />
-                  {/* Filled segment between thumbs */}
-                  <div
-                    className="absolute h-3 rounded-full bg-blue-600 pointer-events-none transition-[left,right] duration-100"
-                    style={{
-                      left: `${((budgetMinK - 70) / 230) * 100}%`,
-                      right: `${100 - ((budgetMaxK - 70) / 230) * 100}%`,
-                    }}
-                    aria-hidden
-                  />
-                  {/* Min thumb — lower z so max thumb is on top when overlapping */}
-                  <input
-                    type="range"
-                    min={70}
-                    max={300}
-                    step={10}
-                    value={budgetMinK}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value)
-                      const newMin = Math.min(value, budgetMaxK)
-                      const newMax = newMin > budgetMaxK ? newMin : budgetMaxK
-                      setBudgetMinK(newMin)
-                      setBudgetMaxK(newMax)
-                      setValue('budgetMin', (newMin * 1000).toString())
-                      setValue('budgetMax', (newMax * 1000).toString())
-                    }}
-                    className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-1"
-                  />
-                  {/* Max thumb — higher z so it’s draggable when thumbs meet */}
-                  <input
-                    type="range"
-                    min={70}
-                    max={300}
-                    step={10}
-                    value={budgetMaxK}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value)
-                      const newMax = Math.max(value, budgetMinK)
-                      setBudgetMaxK(newMax)
-                      setBudgetMinK((prev) => (newMax < prev ? newMax : prev))
-                      setValue('budgetMax', (newMax * 1000).toString())
-                      setValue('budgetMin', (Math.min(budgetMinK, newMax) * 1000).toString())
-                    }}
-                    className="absolute w-full h-3 inset-x-0 m-0 range-thumb-only range-thumb-z-2"
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-2 px-0.5">
-                  <span>70k</span>
-                  <span>300k</span>
-                </div>
-              </div>
+              {/* Amount inputs */}
               <div>
                 <label className="block text-sm font-semibold mb-2 text-gray-700">
-                  Currency *
+                  Amount
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">
+                      Min
+                    </span>
+                    <input
+                      type="number"
+                      {...register('budgetMin')}
+                      className="w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none tabular-nums"
+                      placeholder="e.g. 80000"
+                      min={0}
+                    />
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">
+                      Max
+                    </span>
+                    <input
+                      type="number"
+                      {...register('budgetMax')}
+                      className="w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none tabular-nums"
+                      placeholder="e.g. 120000"
+                      min={0}
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Period toggle */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Period
+                </label>
+                <div className="inline-flex rounded-xl border-2 border-gray-200 p-1 bg-gray-50">
+                  {(['DAILY', 'MONTHLY', 'YEARLY'] as const).map((period) => (
+                    <button
+                      key={period}
+                      type="button"
+                      onClick={() => setValue('budgetPeriod', period)}
+                      className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        watch('budgetPeriod') === period
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                    >
+                      {period === 'DAILY' ? 'Daily' : period === 'MONTHLY' ? 'Monthly' : 'Yearly'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Currency dropdown */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">
+                  Currency
                 </label>
                 <select
-                  {...register('budgetCurrency', { required: true })}
+                  {...register('budgetCurrency')}
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
                 >
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
+                  <optgroup label="Major Currencies">
+                    <option value="USD">USD — US Dollar</option>
+                    <option value="EUR">EUR — Euro</option>
+                    <option value="GBP">GBP — British Pound</option>
+                    <option value="CHF">CHF — Swiss Franc</option>
+                  </optgroup>
+                  <optgroup label="Asia-Pacific">
+                    <option value="SGD">SGD — Singapore Dollar</option>
+                    <option value="JPY">JPY — Japanese Yen</option>
+                    <option value="AUD">AUD — Australian Dollar</option>
+                    <option value="NZD">NZD — New Zealand Dollar</option>
+                    <option value="HKD">HKD — Hong Kong Dollar</option>
+                    <option value="CNY">CNY — Chinese Yuan</option>
+                    <option value="KRW">KRW — South Korean Won</option>
+                    <option value="INR">INR — Indian Rupee</option>
+                    <option value="MYR">MYR — Malaysian Ringgit</option>
+                    <option value="THB">THB — Thai Baht</option>
+                    <option value="TWD">TWD — Taiwan Dollar</option>
+                  </optgroup>
+                  <optgroup label="Middle East">
+                    <option value="AED">AED — UAE Dirham</option>
+                    <option value="SAR">SAR — Saudi Riyal</option>
+                    <option value="QAR">QAR — Qatari Riyal</option>
+                    <option value="KWD">KWD — Kuwaiti Dinar</option>
+                    <option value="BHD">BHD — Bahraini Dinar</option>
+                  </optgroup>
+                  <optgroup label="Nordics">
+                    <option value="NOK">NOK — Norwegian Krone</option>
+                    <option value="SEK">SEK — Swedish Krona</option>
+                    <option value="DKK">DKK — Danish Krone</option>
+                  </optgroup>
+                  <optgroup label="Eastern Europe">
+                    <option value="PLN">PLN — Polish Zloty</option>
+                    <option value="CZK">CZK — Czech Koruna</option>
+                    <option value="HUF">HUF — Hungarian Forint</option>
+                  </optgroup>
+                  <optgroup label="Americas">
+                    <option value="CAD">CAD — Canadian Dollar</option>
+                    <option value="BRL">BRL — Brazilian Real</option>
+                    <option value="MXN">MXN — Mexican Peso</option>
+                  </optgroup>
+                  <optgroup label="Africa">
+                    <option value="ZAR">ZAR — South African Rand</option>
+                  </optgroup>
                 </select>
               </div>
+              {/* Estimate checkbox */}
               <label className="flex items-center gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
@@ -589,7 +620,7 @@ export default function PostJobPage() {
                   className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                 />
                 <span className="text-gray-700 group-hover:text-gray-900">
-                  This is an estimated budget
+                  This is an estimated figure
                 </span>
               </label>
             </div>
